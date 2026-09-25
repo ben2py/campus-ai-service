@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">校园智能客服最终评测摘要</title>
+  <desc id="desc">展示检索、回答、智能体和工程指标，以及基线到最终版本的正确率变化。</desc>
+  <rect width="1200" height="680" fill="#f4f7f6"/>
+  <rect x="50" y="42" width="1100" height="596" rx="24" fill="#ffffff" stroke="#cfdbd6"/>
+  <text x="92" y="104" fill="#10211b" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif" font-size="34" font-weight="700">最终评测摘要</text>
+  <text x="92" y="140" fill="#52645e" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif" font-size="18">冻结测试集 20 题 · 23/23 单元测试通过 · 课程模拟数据</text>
+  <g font-family="-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif">
+    <g transform="translate(92 190)">
+      <rect width="230" height="150" rx="16" fill="#eef3f1"/>
+      <text x="22" y="38" fill="#52645e" font-size="17">Retrieval</text>
+      <text x="22" y="91" fill="#08785c" font-size="40" font-weight="750">100%</text>
+      <text x="22" y="124" fill="#10211b" font-size="16">Recall@1 / @3 / @5</text>
+    </g>
+    <g transform="translate(350 190)">
+      <rect width="230" height="150" rx="16" fill="#eef3f1"/>
+      <text x="22" y="38" fill="#52645e" font-size="17">Answer</text>
+      <text x="22" y="91" fill="#08785c" font-size="40" font-weight="750">100%</text>
+      <text x="22" y="124" fill="#10211b" font-size="16">正确 / 忠实 / 引用</text>
+    </g>
+    <g transform="translate(608 190)">
+      <rect width="230" height="150" rx="16" fill="#eef3f1"/>
+      <text x="22" y="38" fill="#52645e" font-size="17">Agent</text>
+      <text x="22" y="91" fill="#08785c" font-size="40" font-weight="750">100%</text>
+      <text x="22" y="124" fill="#10211b" font-size="16">选择 / 参数 / 完成</text>
+    </g>
+    <g transform="translate(866 190)">
+      <rect width="230" height="150" rx="16" fill="#eef3f1"/>
+      <text x="22" y="38" fill="#52645e" font-size="17">Engineering</text>
+      <text x="22" y="91" fill="#08785c" font-size="40" font-weight="750">0.36ms</text>
+      <text x="22" y="124" fill="#10211b" font-size="16">平均本地推理耗时</text>
+    </g>
+    <text x="92" y="400" fill="#10211b" font-size="21" font-weight="700">优化前后</text>
+    <text x="92" y="447" fill="#52645e" font-size="17">Answer Correctness</text>
+    <rect x="300" y="425" width="595" height="28" rx="8" fill="#dce5e1"/>
+    <rect x="300" y="425" width="506" height="28" rx="8" fill="#7aa99a"/>
+    <text x="825" y="447" fill="#52645e" font-size="17">85% →</text>
+    <rect x="915" y="425" width="181" height="28" rx="8" fill="#08785c"/>
+    <text x="1028" y="447" fill="#ffffff" font-size="17" font-weight="700">100%</text>
+    <text x="92" y="510" fill="#52645e" font-size="17">Task Completion</text>
+    <rect x="300" y="488" width="595" height="28" rx="8" fill="#dce5e1"/>
+    <rect x="300" y="488" width="506" height="28" rx="8" fill="#7aa99a"/>
+    <text x="825" y="510" fill="#52645e" font-size="17">85% →</text>
+    <rect x="915" y="488" width="181" height="28" rx="8" fill="#08785c"/>
+    <text x="1028" y="510" fill="#ffffff" font-size="17" font-weight="700">100%</text>
+    <text x="92" y="584" fill="#52645e" font-size="16">结果来自 04_Evaluation 下保存的原始 JSON；外部 LLM 与 Coze 未实测，不计入以上数字。</text>
+  </g>
+</svg>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="基于 RAG 与 Agent 的校园智能客服课程实验演示">
+  <title>校园服务助手</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#message-input">跳到问题输入框</a>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">AI</span>
+      <div><strong>校园服务助手</strong><span>RAG 与 Agent 实验版</span></div>
+    </div>
+    <div class="topbar-actions">
+      <span class="system-state" id="system-state">本地评测模式</span>
+      <button class="secondary-button" id="theme-button" type="button" aria-label="切换深色或浅色模式">切换主题</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="chat-panel" aria-labelledby="chat-title">
+      <div class="chat-heading">
+        <div>
+          <p class="kicker">课程实验演示</p>
+          <h1 id="chat-title">请问校园服务问题</h1>
+          <p>支持公开规则问答、模拟申请进度查询和人工转接。所有业务数据均为课程模拟数据。</p>
+        </div>
+        <button class="text-button" id="clear-button" type="button">清空对话</button>
+      </div>
+
+      <div class="suggestions" aria-label="示例问题">
+        <button type="button" data-question="图书馆周末几点开馆？">图书馆开放时间</button>
+        <button type="button" data-question="查询 S1001 的 AP2026001 申请进度">查申请进度</button>
+        <button type="button" data-question="校园卡丢失怎么处理？">校园卡挂失</button>
+        <button type="button" data-question="我想找人工客服">转人工客服</button>
+      </div>
+
+      <div class="messages" id="messages" role="log" aria-live="polite" aria-relevant="additions">
+        <article class="message assistant-message">
+          <div class="message-label">助手</div>
+          <p>你好。请直接描述问题。当知识库没有可靠证据时，我会拒绝编造并提示人工渠道。</p>
+        </article>
+      </div>
+
+      <form id="chat-form" class="composer">
+        <label for="message-input">输入问题</label>
+        <div class="composer-row">
+          <textarea id="message-input" name="question" rows="2" maxlength="1000" placeholder="例如：国家励志奖学金需要哪些条件？" required></textarea>
+          <button class="primary-button" id="send-button" type="submit">发送问题</button>
+        </div>
+        <p class="form-help" id="form-help">请勿输入真实学号、密码或其他敏感信息。</p>
+      </form>
+    </section>
+
+    <aside class="trace-panel" aria-labelledby="trace-title">
+      <div class="trace-heading">
+        <p class="kicker">可解释证据</p>
+        <h2 id="trace-title">本次处理记录</h2>
+      </div>
+      <div id="trace-empty" class="empty-state">
+        <strong>尚无查询记录</strong>
+        <p>发送问题后，这里会显示 Agent 路由、检索来源、Tool 调用和耗时。</p>
+      </div>
+      <div id="trace-content" hidden>
+        <dl class="facts">
+          <div><dt>路由</dt><dd id="route-value"></dd></div>
+          <div><dt>工具</dt><dd id="tool-value"></dd></div>
+          <div><dt>耗时</dt><dd id="latency-value"></dd></div>
+        </dl>
+        <section class="evidence-section">
+          <h3>引用来源</h3>
+          <div id="citations"></div>
+        </section>
+        <section class="evidence-section">
+          <h3>Agent Trace</h3>
+          <ol id="trace-list"></ol>
+        </section>
+      </div>
+    </aside>
+  </main>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

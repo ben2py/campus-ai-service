@@ -1,0 +1,256 @@
+{
+  "config": {
+    "name": "final_v1",
+    "chunk_size": 260,
+    "overlap": 40,
+    "semantic_weight": 0.62,
+    "threshold": 0.25,
+    "top_k": 3
+  },
+  "statistics": {
+    "document_count": 12,
+    "topics": [
+      "信息服务",
+      "图书馆",
+      "奖助学金",
+      "学生服务",
+      "宿舍",
+      "教务",
+      "校园卡"
+    ],
+    "topic_count": 7,
+    "total_characters": 2132,
+    "chunk_count": 24,
+    "average_length": 71.29,
+    "minimum_length": 53,
+    "maximum_length": 90,
+    "embedding_dimension": 512
+  },
+  "metrics": {
+    "recall_at_1": 100.0,
+    "recall_at_3": 100.0,
+    "recall_at_5": 100.0
+  },
+  "cases": [
+    {
+      "id": "K01",
+      "question": "图书馆周末几点开馆？",
+      "expected_source": "D08",
+      "top5_sources": [
+        "D08",
+        "D08",
+        "D09",
+        "D09",
+        "D12"
+      ],
+      "top5_chunks": [
+        "D08-C01",
+        "D08-C02",
+        "D09-C01",
+        "D09-C02",
+        "D12-C01"
+      ],
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true
+    },
+    {
+      "id": "K02",
+      "question": "本科生最多能借几本书，借期多久？",
+      "expected_source": "D09",
+      "top5_sources": [
+        "D09",
+        "D04",
+        "D02",
+        "D09",
+        "D04"
+      ],
+      "top5_chunks": [
+        "D09-C01",
+        "D04-C02",
+        "D02-C01",
+        "D09-C02",
+        "D04-C01"
+      ],
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true
+    },
+    {
+      "id": "K03",
+      "question": "申请国家励志奖学金需要什么额外条件？",
+      "expected_source": "D04",
+      "top5_sources": [
+        "D04",
+        "D04",
+        "D05",
+        "D02",
+        "D02"
+      ],
+      "top5_chunks": [
+        "D04-C01",
+        "D04-C02",
+        "D05-C02",
+        "D02-C02",
+        "D02-C01"
+      ],
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true
+    },
+    {
+      "id": "K04",
+      "question": "突发情况没参加考试，缓考材料多久内补交？",
+      "expected_source": "D03",
+      "top5_sources": [
+        "D03",
+        "D05",
+        "D03",
+        "D01",
+        "D04"
+      ],
+      "top5_chunks": [
+        "D03-C02",
+        "D05-C01",
+        "D03-C01",
+        "D01-C02",
+        "D04-C02"
+      ],
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true
+    },
+    {
+      "id": "K05",
+      "question": "宿舍楼晚上几点关门？",
+      "expected_source": "D06",
+      "top5_sources": [
+        "D06",
+        "D06",
+        "D05",
+        "D03",
+        "D11"
+      ],
+      "top5_chunks": [
+        "D06-C01",
+        "D06-C02",
+        "D05-C02",
+        "D03-C02",
+        "D11-C01"
+      ],
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true
+    },
+    {
+      "id": "K06",
+      "question": "校园卡丢了应该先做什么？",
+      "expected_source": "D10",
+      "top5_sources": [
+        "D10",
+        "D10",
+        "D08",
+        "D11",
+        "D07"
+      ],
+      "top5_chunks": [
+        "D10-C01",
+        "D10-C02",
+        "D08-C02",
+        "D11-C02",
+        "D07-C01"
+      ],
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true
+    },
+    {
+      "id": "K07",
+      "question": "wifi连不上时首先如何排查？",
+      "expected_source": "D11",
+      "top5_sources": [
+        "D11",
+        "D11",
+        "D10",
+        "D06",
+        "D07"
+      ],
+      "top5_chunks": [
+        "D11-C02",
+        "D11-C01",
+        "D10-C02",
+        "D06-C02",
+        "D07-C01"
+      ],
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true
+    },
+    {
+      "id": "K08",
+      "question": "2026年第一学期什么时候正式上课？",
+      "expected_source": "D01",
+      "top5_sources": [
+        "D01",
+        "D01",
+        "D02",
+        "D02",
+        "D07"
+      ],
+      "top5_chunks": [
+        "D01-C01",
+        "D01-C02",
+        "D02-C01",
+        "D02-C02",
+        "D07-C01"
+      ],
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true
+    },
+    {
+      "id": "K09",
+      "question": "开学后还能退补选吗？",
+      "expected_source": "D02",
+      "top5_sources": [
+        "D02",
+        "D02",
+        "D11",
+        "D05",
+        "D01"
+      ],
+      "top5_chunks": [
+        "D02-C01",
+        "D02-C02",
+        "D11-C01",
+        "D05-C02",
+        "D01-C01"
+      ],
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true
+    },
+    {
+      "id": "K10",
+      "question": "遇到家庭突发变故可以申请什么补助？",
+      "expected_source": "D05",
+      "top5_sources": [
+        "D05",
+        "D04",
+        "D05",
+        "D03",
+        "D04"
+      ],
+      "top5_chunks": [
+        "D05-C02",
+        "D04-C01",
+        "D05-C01",
+        "D03-C02",
+        "D04-C02"
+      ],
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "elapsed_seconds": 0.06,
+  "dataset_count": 20,
+  "baseline_config": {
+    "name": "baseline_v1",
+    "chunk_size": 520,
+    "overlap": 0,
+    "semantic_weight": 1.0,
+    "threshold": 0.35,
+    "top_k": 3
+  },
+  "final_config": {
+    "name": "final_v1",
+    "chunk_size": 260,
+    "overlap": 40,
+    "semantic_weight": 0.62,
+    "threshold": 0.25,
+    "top_k": 3
+  },
+  "notice": "所有Python指标由本脚本当次运行生成；Coze未实测。"
+}

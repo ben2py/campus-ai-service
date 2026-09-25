@@ -1,0 +1,106 @@
+{
+  "experiments": [
+    {
+      "config": {
+        "name": "chunk_A",
+        "chunk_size": 120,
+        "overlap": 0,
+        "semantic_weight": 0.62,
+        "threshold": 0.25,
+        "top_k": 3
+      },
+      "statistics": {
+        "document_count": 12,
+        "topics": [
+          "信息服务",
+          "图书馆",
+          "奖助学金",
+          "学生服务",
+          "宿舍",
+          "教务",
+          "校园卡"
+        ],
+        "topic_count": 7,
+        "total_characters": 2132,
+        "chunk_count": 24,
+        "average_length": 71.29,
+        "minimum_length": 53,
+        "maximum_length": 90,
+        "embedding_dimension": 512
+      },
+      "retrieval": {
+        "recall_at_1": 100.0,
+        "recall_at_3": 100.0,
+        "recall_at_5": 100.0
+      }
+    },
+    {
+      "config": {
+        "name": "chunk_B",
+        "chunk_size": 260,
+        "overlap": 40,
+        "semantic_weight": 0.62,
+        "threshold": 0.25,
+        "top_k": 3
+      },
+      "statistics": {
+        "document_count": 12,
+        "topics": [
+          "信息服务",
+          "图书馆",
+          "奖助学金",
+          "学生服务",
+          "宿舍",
+          "教务",
+          "校园卡"
+        ],
+        "topic_count": 7,
+        "total_characters": 2132,
+        "chunk_count": 24,
+        "average_length": 71.29,
+        "minimum_length": 53,
+        "maximum_length": 90,
+        "embedding_dimension": 512
+      },
+      "retrieval": {
+        "recall_at_1": 100.0,
+        "recall_at_3": 100.0,
+        "recall_at_5": 100.0
+      }
+    },
+    {
+      "config": {
+        "name": "chunk_C",
+        "chunk_size": 520,
+        "overlap": 80,
+        "semantic_weight": 0.62,
+        "threshold": 0.25,
+        "top_k": 3
+      },
+      "statistics": {
+        "document_count": 12,
+        "topics": [
+          "信息服务",
+          "图书馆",
+          "奖助学金",
+          "学生服务",
+          "宿舍",
+          "教务",
+          "校园卡"
+        ],
+        "topic_count": 7,
+        "total_characters": 2132,
+        "chunk_count": 24,
+        "average_length": 71.29,
+        "minimum_length": 53,
+        "maximum_length": 90,
+        "embedding_dimension": 512
+      },
+      "retrieval": {
+        "recall_at_1": 100.0,
+        "recall_at_3": 100.0,
+        "recall_at_5": 100.0
+      }
+    }
+  ]
+}

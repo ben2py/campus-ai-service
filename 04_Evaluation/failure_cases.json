@@ -1,0 +1,32 @@
+[
+  {
+    "id": "F-ANS-K05",
+    "question": "宿舍楼晚上几点关门？",
+    "system_output": "当前知识库没有足够可靠的依据。我不会编造答案，建议转人工服务中心核实。",
+    "expected": "包含冻结测试集中的期望关键词与路由",
+    "type": "Unknown Handling Failure",
+    "facts": "correct=False, route=unknown, tool=None",
+    "analysis": "检索证据或路由结果与预期不一致。",
+    "improvement": "核查阈值、类型规则和回答证据选择。"
+  },
+  {
+    "id": "F-ANS-K06",
+    "question": "校园卡丢了应该先做什么？",
+    "system_output": "当前知识库没有足够可靠的依据。我不会编造答案，建议转人工服务中心核实。",
+    "expected": "包含冻结测试集中的期望关键词与路由",
+    "type": "Unknown Handling Failure",
+    "facts": "correct=False, route=unknown, tool=None",
+    "analysis": "检索证据或路由结果与预期不一致。",
+    "improvement": "核查阈值、类型规则和回答证据选择。"
+  },
+  {
+    "id": "F-ANS-M02",
+    "question": "这项要经过哪些评审流程？",
+    "system_output": "校级综合奖学金面向纳入正常学籍管理的全日制本科生。国家励志奖学金还要求学生经学校认定为家庭经济困难学生。\n\n来源：[D04 申请条件]",
+    "expected": "包含冻结测试集中的期望关键词与路由",
+    "type": "Retrieval Failure",
+    "facts": "correct=False, route=knowledge, tool=None",
+    "analysis": "检索证据或路由结果与预期不一致。",
+    "improvement": "核查阈值、类型规则和回答证据选择。"
+  }
+]

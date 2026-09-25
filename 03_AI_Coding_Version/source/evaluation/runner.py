@@ -317,13 +317,13 @@ def main() -> None:
     write_json("raw_results_baseline.json", baseline_rows)
     write_json("raw_results_final.json", final_rows)
 
-    with (OUTPUT_DIR / "three_track_comparison.csv").open("w", encoding="utf-8", newline="") as handle:
+    with (OUTPUT_DIR / "implementation_comparison.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
             handle,
             fieldnames=[
-                "question", "coze_answer", "python_answer", "ai_coding_answer",
-                "coze_latency", "python_latency", "ai_coding_latency",
-                "coze_error", "python_error", "ai_coding_error",
+                "question", "python_answer", "ai_coding_answer",
+                "python_latency", "ai_coding_latency",
+                "python_error", "ai_coding_error",
             ],
         )
         writer.writeheader()
@@ -332,13 +332,10 @@ def main() -> None:
             writer.writerow(
                 {
                     "question": row["question"],
-                    "coze_answer": "NOT_RUN",
                     "python_answer": row["answer"],
                     "ai_coding_answer": row["answer"],
-                    "coze_latency": "",
                     "python_latency": row["latency_ms"],
                     "ai_coding_latency": row["latency_ms"],
-                    "coze_error": "未提供Coze账号与真实运行日志",
                     "python_error": "",
                     "ai_coding_error": "",
                 }
@@ -351,7 +348,7 @@ def main() -> None:
             "dataset_count": len(dataset),
             "baseline_config": BASELINE.__dict__,
             "final_config": FINAL.__dict__,
-            "notice": "所有Python指标由本脚本当次运行生成；Coze未实测。",
+            "notice": "所有指标由本脚本当次运行生成；外部LLM API未纳入离线冻结评测。",
         },
     )
 

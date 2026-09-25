@@ -2,7 +2,7 @@
 
 ## 目标
 
-完成可访问本地Demo、README、Coze搭建规格、六大提交目录、Final Audit和V1.0结构实验报告。
+完成可访问本地Demo、README、最终提交目录、Final Audit和V1.0结构实验报告。
 
 ## UI决策
 

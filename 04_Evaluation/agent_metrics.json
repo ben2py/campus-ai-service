@@ -24,7 +24,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.57,
+      "latency_ms": 0.34,
       "trace": [
         {
           "step": 1,
@@ -152,7 +152,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.56,
+      "latency_ms": 0.34,
       "trace": [
         {
           "step": 1,
@@ -280,7 +280,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.48,
+      "latency_ms": 0.35,
       "trace": [
         {
           "step": 1,
@@ -408,7 +408,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.49,
+      "latency_ms": 0.34,
       "trace": [
         {
           "step": 1,
@@ -536,7 +536,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.47,
+      "latency_ms": 0.32,
       "trace": [
         {
           "step": 1,
@@ -664,7 +664,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.47,
+      "latency_ms": 0.32,
       "trace": [
         {
           "step": 1,
@@ -792,7 +792,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.49,
+      "latency_ms": 0.34,
       "trace": [
         {
           "step": 1,
@@ -920,7 +920,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.56,
+      "latency_ms": 0.38,
       "trace": [
         {
           "step": 1,
@@ -1048,7 +1048,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.47,
+      "latency_ms": 0.32,
       "trace": [
         {
           "step": 1,
@@ -1176,7 +1176,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.48,
+      "latency_ms": 0.34,
       "trace": [
         {
           "step": 1,
@@ -1305,7 +1305,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.21,
+      "latency_ms": 0.08,
       "trace": [
         {
           "step": 1,
@@ -1358,7 +1358,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.15,
+      "latency_ms": 0.06,
       "trace": [
         {
           "step": 1,
@@ -1411,7 +1411,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.14,
+      "latency_ms": 0.06,
       "trace": [
         {
           "step": 1,
@@ -1464,7 +1464,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.13,
+      "latency_ms": 0.06,
       "trace": [
         {
           "step": 1,
@@ -1510,7 +1510,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.48,
+      "latency_ms": 0.33,
       "trace": [
         {
           "step": 1,
@@ -1638,7 +1638,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.48,
+      "latency_ms": 0.34,
       "trace": [
         {
           "step": 1,
@@ -1764,7 +1764,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.38,
+      "latency_ms": 0.31,
       "trace": [
         {
           "step": 1,
@@ -1889,7 +1889,7 @@
       "tool_arguments_correct": true,
       "unknown_handled": true,
       "task_complete": true,
-      "latency_ms": 0.38,
+      "latency_ms": 0.3,
       "trace": [
         {
           "step": 1,

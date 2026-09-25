@@ -27,7 +27,7 @@
     <g transform="translate(866 190)">
       <rect width="230" height="150" rx="16" fill="#eef3f1"/>
       <text x="22" y="38" fill="#52645e" font-size="17">Engineering</text>
-      <text x="22" y="91" fill="#08785c" font-size="40" font-weight="750">0.36ms</text>
+      <text x="22" y="91" fill="#08785c" font-size="40" font-weight="750">0.25ms</text>
       <text x="22" y="124" fill="#10211b" font-size="16">平均本地推理耗时</text>
     </g>
     <text x="92" y="400" fill="#10211b" font-size="21" font-weight="700">优化前后</text>
@@ -43,6 +43,6 @@
     <text x="825" y="510" fill="#52645e" font-size="17">85% →</text>
     <rect x="915" y="488" width="181" height="28" rx="8" fill="#08785c"/>
     <text x="1028" y="510" fill="#ffffff" font-size="17" font-weight="700">100%</text>
-    <text x="92" y="584" fill="#52645e" font-size="16">结果来自 04_Evaluation 下保存的原始 JSON；外部 LLM 与 Coze 未实测，不计入以上数字。</text>
+    <text x="92" y="584" fill="#52645e" font-size="16">结果来自 04_Evaluation 下保存的原始 JSON；外部 LLM API 不计入以上离线指标。</text>
   </g>
 </svg>

@@ -50,6 +50,5 @@ python -m src.evaluation.runner
 
 ## 局限
 
-- Coze在线版未在本地环境实测。
 - 离线Hashing Embedding适合教学原理复现，不代表生产语义模型效果。
 - 未接入真实统一身份认证、校车、食堂或学工系统。

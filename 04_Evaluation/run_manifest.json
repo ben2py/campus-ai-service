@@ -1,5 +1,5 @@
 {
-  "elapsed_seconds": 0.06,
+  "elapsed_seconds": 0.051,
   "dataset_count": 20,
   "baseline_config": {
     "name": "baseline_v1",
@@ -17,5 +17,5 @@
     "threshold": 0.25,
     "top_k": 3
   },
-  "notice": "所有Python指标由本脚本当次运行生成；Coze未实测。"
+  "notice": "所有指标由本脚本当次运行生成；外部LLM API未纳入离线冻结评测。"
 }

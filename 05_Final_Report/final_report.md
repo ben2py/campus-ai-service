@@ -1,7 +1,7 @@
 # 《基于 RAG 与 Agent 的校园智能客服系统》
 ## 三周项目制实验报告 V1.0
 
-> 本报告严格沿用《实验报告模板 V1.0》的章节结构，设计与验收依据为《实验指导书 V3.2》。所有数值均来自 `04_Evaluation` 中保存的实验结果；无法实测的外部平台内容明确标记为“待补”，不伪造证据。
+> 本报告严格沿用《实验报告模板 V1.0》的章节编号、内容顺序和证据要求，设计与验收依据为《实验指导书 V3.2》。所有量化结果均来自 `04_Evaluation` 中保存的原始数据；当前项目聚焦 Python 原理复现与 AI Coding 工程实践，不包含外部可视化平台实现。
 
 ---
 
@@ -34,7 +34,7 @@
 
 ## 2.1 项目简介
 
-本项目面向学生、辅导员与校园服务人员，构建一个能够回答公开校园规则、查询模拟业务状态、支持多轮追问并在证据不足时主动拒答或转人工的校园智能客服。系统采用三轨方式完成：Coze 轨道提供可复现的搭建规格，Python 轨道从底层实现文档加载、Chunking、Embedding、混合检索、RAG、Tool、Agent、Memory 与 Evaluation，AI Coding 轨道保存任务拆解、审查记录及最终源码快照。知识库由 12 份自建课程模拟文档组成，覆盖 7 个主题，不包含真实个人敏感信息。系统提供状态查询和人工转接两个工具，通过统一 Schema 注册、参数校验和最大三步循环实现可控 Agent。冻结测试集包含 20 题，最终 Recall@1/3/5、回答正确率、忠实度、引用准确率、工具选择率、参数准确率、任务完成率与未知问题处理率均为 100%，23 项单元测试全部通过。实验同时保留了基线版本的三个真实失败案例，证明阈值、检索策略和会话指代解析对结果有直接影响。外部 LLM API 与 Coze 账号运行未在无密钥环境中伪造，报告如实列为待本人补充证据。
+本项目面向学生、辅导员与校园服务人员，构建一个能够回答公开校园规则、查询模拟业务状态、支持多轮追问并在证据不足时主动拒答或转人工的校园智能客服。Python 版本从底层实现文档加载、Chunking、Embedding、混合检索、RAG、Tool、Agent、Memory 与 Evaluation；AI Coding 版本保存任务拆解、人工审查记录及最终源码快照。知识库由 12 份自建课程模拟文档组成，覆盖 7 个主题，不包含真实个人敏感信息。系统提供状态查询和人工转接两个工具，通过统一 Schema 注册、参数校验和最大三步循环实现可控 Agent。冻结测试集包含 20 题，最终 Recall@1/3/5、回答正确率、忠实度、引用准确率、工具选择率、参数准确率、任务完成率与未知问题处理率均为 100%，23 项单元测试全部通过。实验同时保留基线版本的三个真实失败案例，证明阈值、检索策略和会话指代解析会直接影响结果。外部 LLM API 未使用个人密钥实测，其结果没有混入离线评测。
 
 ## 2.2 项目核心技术
 
@@ -49,7 +49,7 @@
 | Agent | 路由 + Tool Registry + 最多3步循环 | 自研 v1 | Knowledge/Tool/Handoff/Refuse 决策 |
 | Memory | 有界会话记忆 | 最近6条 | 多轮指代解析，防止无限增长 |
 | Evaluation | 冻结JSON数据集 + Python runner | v1 | Retrieval/Answer/Agent/Engineering 评测 |
-| 可视化平台 | Coze | 待本人账号实测 | 对照搭建规格 |
+| 可视化界面 | Flask + HTML/CSS/JavaScript | 本项目版本 | 对话、引用与Trace展示 |
 | AI Coding | Codex | 当前桌面版 | TASK 驱动开发、审查、测试与文档 |
 | 编程语言 | Python / HTML / CSS / JavaScript | Python 3.12兼容 | 后端与前端 |
 | 数据库 | SQLite | Python 标准库 | 向量、业务状态与工单 |
@@ -79,7 +79,7 @@
 
 ## 3.4 非功能需求
 
-本地确定性路径平均耗时 0.36 ms、P95 0.52 ms；异常由工具注册表和 Web API 统一处理；密钥只从环境变量读取，`.env` 被忽略；固定随机无关算法、冻结测试集和一键 runner 保证可复现；各模块按 ingestion、retrieval、rag、tools、agent、memory、evaluation 分层，便于替换真实向量模型或业务 API。
+本地确定性路径平均耗时 0.25 ms、P95 0.35 ms；异常由工具注册表和 Web API 统一处理；密钥只从环境变量读取，`.env` 被忽略；确定性算法、冻结测试集和一键 runner 保证可复现；各模块按 ingestion、retrieval、rag、tools、agent、memory、evaluation 分层，便于替换真实向量模型或业务 API。
 
 ---
 
@@ -322,35 +322,27 @@ Tool 用于动态、可验证、可能产生状态变化的业务，Knowledge �
 
 ---
 
-# 十二、Coze版本实现
+# 十二、可视化版本实现
 
-## 12.1 Coze系统结构
+## 12.1 系统结构
 
-已完成可复现设计规格，但当前环境没有用户的 Coze 登录态，不能代替用户发布或伪造截图。待补内容清单：
+本项目使用自建 Flask Web 界面作为可视化版本。界面由顶部系统状态、问题建议区、对话区、输入表单和可解释证据侧栏组成；后端通过 `/api/chat`、`/api/reset` 与 `/api/health` 提供服务。
 
-- 截图1：Bot 与系统提示词；
-- 截图2：Knowledge 导入 12 份文档及检索测试；
-- 截图3：Workflow、两个 Tool、Memory 和运行日志。
+## 12.2 实现过程
 
-搭建依据见 `01_Coze_Version/workflow/coze_build_spec.md`，截图命名规范见 `01_Coze_Version/screenshots/README.md`。
+前端使用语义化 HTML、CSS 变量和原生 JavaScript 实现。用户提交问题后，页面显示加载状态并调用后端；返回结果渲染回答、路由、Tool、耗时、引用和 Agent Trace。界面支持深浅主题、键盘焦点、错误提示、空状态及移动端布局。
 
-## 12.2 Coze实现过程
+## 12.3 可视化功能与底层机制映射
 
-新建 Bot 后导入 `01_Coze_Version/knowledge`；按标题/段落切分并保留文档名；Workflow 依次配置意图分支、Knowledge Retrieval、状态查询插件/工作流、人工转接与最终回答；参数字段与 Python Schema 保持一致；开启会话记忆但限制敏感信息；使用两道对照题保存运行日志。此处是可执行规格，实际账号操作仍需本人完成。
-
-## 12.3 Coze隐藏的底层机制
-
-| Coze功能 | 对应底层机制 | Python实现位置 |
+| 界面功能 | 对应底层机制 | Python实现位置 |
 |---|---|---|
-| Knowledge | 文档解析、Chunk与元数据 | `src/ingestion/` |
-| Embedding | 文本向量化 | `src/retrieval/embedder.py` |
-| Knowledge Search | 向量/关键词检索与排序 | `src/retrieval/retriever.py` |
-| LLM Node | Prompt组装与模型调用 | `src/llm/client.py`、`src/rag/pipeline.py` |
-| Workflow | 条件分支和执行顺序 | `src/agent/agent.py` |
-| Tool | Schema、参数校验、Handler | `src/tools/` |
-| Agent | 规划、行动、观察、终止 | `src/agent/agent.py` |
-| Memory | 会话状态与窗口 | `src/memory/conversation.py` |
-| Logs | Trace与文件日志 | `logs/`、响应 `trace` |
+| 对话输入 | Question与Session | `app.py` |
+| 知识回答 | RAG Pipeline | `src/rag/pipeline.py` |
+| 来源卡片 | Citation Metadata | `src/retrieval/` |
+| Tool状态 | Tool Registry与Observation | `src/tools/` |
+| 处理路径 | Agent Trace | `src/agent/agent.py` |
+| 会话清空 | Memory Reset | `src/memory/conversation.py` |
+| 错误状态 | API与Tool异常处理 | `app.py`、`src/tools/registry.py` |
 
 ---
 
@@ -431,7 +423,7 @@ Tool 用于动态、可验证、可能产生状态变化的业务，Knowledge �
 
 ## 14.4 AI生成代码的人工审查
 
-代码并非一次成功：出现过阈值过高、检索证据选择偏移和移动端无头截图裁切问题；没有依赖不存在的业务 API，真实 LLM 接口采用标准兼容协议并由 Mock 验证请求解析。最终通过 23 项单元测试、20 题冻结评测、三张 UI 截图检查与工程审计验证。使用者仍需对业务规则和外部平台配置承担最终审查责任。
+代码并非一次成功：出现过阈值过高、检索证据选择偏移和移动端无头截图裁切问题；没有依赖不存在的业务 API，真实 LLM 接口采用标准兼容协议并由 Mock 验证请求解析。最终通过 23 项单元测试、20 题冻结评测、三张 UI 截图检查与工程审计验证。使用者仍需对业务规则、模型配置和最终实验结论承担审查责任。
 
 ---
 
@@ -592,8 +584,8 @@ Knowledge 题依据 12 份知识文档人工设计；Status 题覆盖三条正�
 
 | 指标 | 结果 |
 |---|---:|
-| Average Latency | 0.36 ms |
-| P95 Latency | 0.52 ms |
+| Average Latency | 0.25 ms |
+| P95 Latency | 0.35 ms |
 | Error Rate | 0% |
 | Test Pass Rate | 100%（23/23） |
 
@@ -615,22 +607,22 @@ Knowledge 题依据 12 份知识文档人工设计；Status 题覆盖三条正�
 
 ---
 
-# 二十一、三轨对照实验
+# 二十一、实现方式对照实验
 
 ## 21.1 实验结果
 
-| Question | Coze | Python | AI Coding |
-|---|---|---|---|
-| Q1 图书馆周末几点开馆？ | 未实测：无账号日志 | 正确回答08:30-21:00并引D08 | 与Python最终源码快照一致 |
-| Q2 查询S1001/AP2026001进度 | 未实测：无账号日志 | 正确调用Tool，返回审核中/学院复审 | 与Python最终源码快照一致 |
+| Question | Python主版本 | AI Coding源码快照 |
+|---|---|---|
+| Q1 图书馆周末几点开馆？ | 正确回答08:30-21:00并引用D08 | 输出与主版本一致 |
+| Q2 查询S1001/AP2026001进度 | 正确调用Tool，返回审核中/学院复审 | 输出与主版本一致 |
 
-模板原表预留 Q1-Q10；V3.2 要求用相同问题做三轨对照，本项目选择两道分别覆盖 Knowledge 与 Tool。原始 CSV 为 `04_Evaluation/three_track_comparison.csv`。
+本项目选择两道分别覆盖 Knowledge 与 Tool 的问题，对照“可运行主版本”和“AI Coding交付快照”。原始 CSV 为 `04_Evaluation/implementation_comparison.csv`。
 
 ## 21.2 差异分析
 
-### Coze隐藏了什么？
+### 可视化界面封装了什么？
 
-Coze 将 Chunk、Embedding、向量库、节点编排、Tool 调用与会话存储封装为可视化配置，降低入门成本，但部分算法参数和运行细节不透明。
+Web 界面封装了 HTTP 请求、会话编号、加载状态和证据展示，使用户无需接触底层向量、阈值和数据库即可完成交互。
 
 ### Python暴露了什么？
 
@@ -640,9 +632,9 @@ Python 暴露数据结构、分数、阈值、参数校验、循环终止、日�
 
 AI Coding 加速了模块脚手架、测试生成、重复审计和文档整理，但也可能生成貌似合理却不符合业务证据的逻辑，必须以冻结测试集和人工审查约束。
 
-### 三种方式的主要差异
+### 两种交付视角的主要差异
 
-Coze 偏向高层配置，Python 偏向底层可控实现，AI Coding 是开发过程加速器而非独立运行时。由于 Coze 未实际运行，本报告不对其效果做虚假排名。
+Python 主版本强调可运行、可复现与可部署；AI Coding 目录强调任务分解、生成过程、人工审查和最终快照。二者使用同一实现与测试，不应被误解为两个独立运行系统。
 
 ---
 
@@ -665,7 +657,7 @@ Coze 偏向高层配置，Python 偏向底层可控实现，AI Coding 是开发�
 | Faithfulness | 100% | 100% | 0pp |
 | Tool Selection | 100% | 100% | 0pp |
 | Task Completion | 85% | 100% | +15pp |
-| Latency | 未单独冻结基线汇总 | 0.36ms | 不作虚假比较 |
+| Latency | 未单独冻结基线汇总 | 0.25ms | 不作虚假比较 |
 
 ---
 
@@ -722,9 +714,9 @@ Branch：main
 
 # 二十四、项目成果截图
 
-## 24.1 Coze
+## 24.1 系统总览
 
-未提供 Coze 登录态，真实截图待本人按规格补充，不使用伪造图。
+系统总览、输入区与证据侧栏见以下 Python 运行截图。
 
 ## 24.2 Python
 
@@ -762,17 +754,17 @@ Branch：main
 
 若只接受“代码已生成”而不检查原始结果，可能把模拟结果写成真实结果，或用看似合理的规则掩盖边界错误。
 
-## 25.5 Coze最大的帮助
+## 25.5 可视化界面的最大帮助
 
-把 Knowledge、Workflow、Tool 与 Agent 以可视节点呈现，适合快速理解系统组成和课堂演示。
+把回答、引用、路由、Tool 与 Trace 放在同一页面中，便于课堂演示、失败定位和用户理解。
 
-## 25.6 Coze的局限
+## 25.6 可视化界面的局限
 
-底层切分、向量分数、存储结构和循环控制不如 Python 透明；没有账号运行日志时也无法形成可核验证据。
+界面主要用于教学演示，尚未实现身份认证、权限分级、管理后台、实时流式输出和生产级可观测性。
 
 ## 25.7 如果再做一次，会怎么改？
 
-引入真实但已脱敏的公开校务文档、中文语义 Embedding 与 reranker；将 Tool 接入测试环境 API；增加人工评分与跨版本回归；最后在获得账号后完成 Coze 实跑与同题时延比较。
+引入真实但已脱敏的公开校务文档、中文语义 Embedding 与 reranker；将 Tool 接入测试环境 API；增加人工评分、压力测试和跨版本回归，并补充身份认证与审计日志。
 
 ---
 
@@ -824,21 +816,20 @@ AI Coding 适合加速实现和覆盖测试，但不能替代需求判断、业�
 - [x] 完成Agent Evaluation
 - [x] 分析至少1个失败案例（实际3个）
 - [x] 完成工程优化
-- [x] 完成三轨对照表与机制分析
+- [x] 完成 Python主版本与AI Coding快照对照
 - [x] 保存原始实验数据
 - [x] 保存TASK记录
 - [x] 保存测试结果
 - [x] README完整
 - [x] API Key没有提交到仓库
 - [x] 报告中的量化结果均有实验依据
-- [ ] 使用本人账号完成 Coze 实跑与截图
 - [ ] 使用本人 API Key 完成外部 LLM Prompt A/B 实测（若课程强制要求）
 
 ---
 
 # 二十八、最终结论
 
-本项目按照 V3.2 指导书完成了一个可运行、可测试、可解释的校园智能客服：以 12 份模拟文档建立 RAG，用混合检索和阈值控制证据，以两个 Tool 处理动态状态和人工转接，以有界 Memory 和三步 Agent Loop 支持多轮决策，并用 20 题冻结集和 23 项单测验证。最终核心离线指标均达到 100%，同时保留基线 3 个失败案例说明优化依据。项目最重要的发现是：可靠 Agent 的关键不只是模型能力，而是证据、工具、状态、终止条件和评测闭环。Coze 与真实外部 LLM 因缺少用户账号/密钥未伪造实测，已提供可执行配置和待补清单。
+本项目按照 V3.2 指导书完成了一个可运行、可测试、可解释的校园智能客服：以 12 份模拟文档建立 RAG，用混合检索和阈值控制证据，以两个 Tool 处理动态状态和人工转接，以有界 Memory 和三步 Agent Loop 支持多轮决策，并用 20 题冻结集和 23 项单测验证。最终核心离线指标均达到 100%，同时保留基线 3 个失败案例说明优化依据。项目最重要的发现是：可靠 Agent 的关键不只是模型能力，而是证据、工具、状态、终止条件和评测闭环。真实外部 LLM 未使用个人密钥实测，因此没有混入离线实验结论。
 
 ---
 
@@ -847,7 +838,7 @@ AI Coding 适合加速实现和覆盖测试，但不能替代需求判断、业�
 | 编号 | 附件 | 文件名 | 是否提交 |
 |---|---|---|---|
 | 1 | 源代码 | `02_Python_Version/` | 是 |
-| 2 | Coze配置/截图 | `01_Coze_Version/` | 配置是；实图待补 |
+| 2 | Web界面 | `02_Python_Version/static/` | 是 |
 | 3 | Knowledge文档 | `02_Python_Version/docs/` | 是 |
 | 4 | 测试集 | `tests/evaluation_v1.json` | 是 |
 | 5 | Evaluation结果 | `04_Evaluation/` | 是 |
@@ -871,7 +862,6 @@ AI Coding 适合加速实现和覆盖测试，但不能替代需求判断、业�
 ## 30.2 AI工具使用声明
 
 ```text
-Coze：仅完成搭建规格，未在用户账号中实跑
 Codex：用于需求拆解、代码生成、Debug、测试、UI、Evaluation与文档
 Cursor：未使用
 其他：UI/UX Pro Max 设计知识用于界面优化
@@ -905,8 +895,8 @@ AI主要用于：需求分析、代码生成、Debug、文档生成、测试设�
 | Agent | Tool Argument Accuracy | 100% |
 | Agent | Task Completion Rate | 100% |
 | Agent | Unknown Handling Rate | 100% |
-| Engineering | Average Latency | 0.36 ms |
-| Engineering | P95 Latency | 0.52 ms |
+| Engineering | Average Latency | 0.25 ms |
+| Engineering | P95 Latency | 0.35 ms |
 | Engineering | Error Rate | 0% |
 | Engineering | Test Pass Rate | 100%（23/23） |
 

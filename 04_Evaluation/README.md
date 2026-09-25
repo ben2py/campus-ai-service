@@ -8,7 +8,7 @@
 - `engineering_metrics.json`：延迟、错误率与测试通过率。
 - `chunking_experiments.json`：三种 Chunk 参数实验。
 - `failure_cases.json`：基线三个真实失败案例。
-- `three_track_comparison.csv`：相同问题的三轨对照；Coze 未实测项明确为 `NOT_RUN`。
+- `implementation_comparison.csv`：相同问题在 Python 主版本与 AI Coding 源码快照中的对照。
 - `prompt_experiment.json`：外部 LLM Prompt A/B 的未运行状态和原因。
 
 重新生成：

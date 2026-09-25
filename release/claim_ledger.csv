@@ -1,0 +1,12 @@
+claim_id,claim_text,artifact_ids,evidence_state,denominator,scope_boundary,human_gate_required,status
+C01,The corpus has 12 documents across 7 topics and 24 chunks,retrieval,verified_artifact,12 documents,current simulated corpus,false,verified
+C02,Recall at 1 3 and 5 is 100 percent,retrieval,verified_artifact,10 knowledge questions,current frozen dataset,false,verified
+C03,Automatic correctness faithfulness and citation accuracy are 100 percent,answer,verified_artifact,20 questions,automatic evaluator only,false,verified
+C04,Agent routing arguments completion and unknown handling are 100 percent,agent,verified_artifact,20 questions,current frozen dataset,false,verified
+C05,Thirty unit tests pass,tests,verified_artifact,30 tests,current local runtime,false,verified
+C06,Average latency is 0.26 ms and P95 is 0.39 ms,engineering,verified_artifact,20 questions,offline deterministic path,false,verified
+C07,Embedding evidence covers 20 chunks at 512 dimensions,embedding,verified_artifact,20 chunks,local hashing embedder,false,verified
+C08,Three authentic baseline failures are preserved,failures,verified_artifact,3 cases,baseline configuration,false,verified
+C09,Ten questions are prepared for human evaluation,human_eval,draft_advisory,10 questions,no human scores claimed,true,restricted_not_claimed
+C10,The external model experiment design covers two prompts and five questions,prompt_eval,draft_advisory,10 planned calls,no external output claimed,true,restricted_not_claimed
+

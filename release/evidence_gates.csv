@@ -1,0 +1,11 @@
+gate_id,artifact_id,evidence_state,human_confirmed,reviewer,review_date,validator,status
+G01,tests,verified_artifact,false,,,python -m unittest discover -s tests -v,passed
+G02,retrieval,verified_artifact,false,,,python -m src.evaluation.runner,passed
+G03,answer,verified_artifact,false,,,python -m src.evaluation.runner,passed
+G04,agent,verified_artifact,false,,,python -m src.evaluation.runner,passed
+G05,engineering,verified_artifact,false,,,JSON and test output cross-check,passed
+G06,embedding,verified_artifact,false,,,selected_chunk_count equals 20,passed
+G07,failures,verified_artifact,false,,,three original failures retained,passed
+G08,human_eval,draft_advisory,false,,,submitter rubric review,requires_human_confirmation
+G09,prompt_eval,draft_advisory,false,,,credentialed prompt runner,requires_submitter_credentials
+

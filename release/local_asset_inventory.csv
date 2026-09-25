@@ -1,0 +1,8 @@
+path,status,file_count,size,role,release_action
+02_Python_Version,included,62,1.2M,runnable implementation and reports,ship
+03_AI_Coding_Version,included,48,588K,task history and source snapshot,ship
+04_Evaluation,included,21,516K,frozen dataset and evidence artifacts,ship
+05_Final_Report,included,4,52K,report and audits,ship
+06_Demo,included,5,392K,demo script and screenshots,ship
+design-system,included,1,8.0K,UI design specification,ship
+

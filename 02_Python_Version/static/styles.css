@@ -45,11 +45,16 @@ body {
   overflow-x: hidden;
 }
 
-body.capture-mobile,
+body.capture-mobile {
+  width: 500px;
+  max-width: 500px;
+  zoom: 0.86;
+}
+
 body.capture-mobile .topbar,
 body.capture-mobile .app-shell {
-  width: 430px;
-  max-width: 430px;
+  width: 100%;
+  max-width: 100%;
 }
 
 button, textarea { font: inherit; }

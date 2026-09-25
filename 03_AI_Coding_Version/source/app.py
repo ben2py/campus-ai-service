@@ -8,12 +8,25 @@ from src.agent.agent import CampusServiceAgent
 from src.config import settings
 from src.ingestion.chunker import chunk_documents
 from src.ingestion.loader import load_documents
-from src.llm.client import DeterministicGroundedClient
+from src.llm.client import DeterministicGroundedClient, GroundedGenerator, OpenAICompatibleClient
 from src.memory.conversation import ConversationMemory
 from src.rag.pipeline import RAGPipeline
 from src.retrieval.embedder import HashingEmbedder
 from src.retrieval.retriever import HybridRetriever
 from src.tools.registry import build_default_registry
+
+
+def build_generator() -> GroundedGenerator:
+    if settings.llm_mode == "offline":
+        return DeterministicGroundedClient()
+    if settings.llm_mode == "api":
+        return OpenAICompatibleClient(
+            settings.llm_base_url,
+            settings.llm_api_key,
+            settings.llm_model,
+            settings.llm_timeout_seconds,
+        )
+    raise ValueError("LLM_MODE 仅支持 offline 或 api。")
 
 
 def build_agent() -> CampusServiceAgent:
@@ -23,7 +36,7 @@ def build_agent() -> CampusServiceAgent:
     retriever = HybridRetriever(chunks, embedder)
     rag = RAGPipeline(
         retriever,
-        DeterministicGroundedClient(),
+        build_generator(),
         top_k=settings.top_k,
         threshold=settings.similarity_threshold,
     )
@@ -43,7 +56,7 @@ def create_app() -> Flask:
 
     @app.get("/api/health")
     def health():
-        return jsonify({"ok": True, "mode": settings.llm_mode, "model": "deterministic-grounded-v1"})
+        return jsonify({"ok": True, "mode": settings.llm_mode, "model": agent.rag.generator.model})
 
     @app.post("/api/chat")
     def chat():

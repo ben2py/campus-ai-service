@@ -18,7 +18,7 @@ from src.ingestion.loader import document_statistics, load_documents
 from src.llm.client import DeterministicGroundedClient
 from src.memory.conversation import ConversationMemory
 from src.rag.pipeline import RAGPipeline
-from src.retrieval.embedder import HashingEmbedder
+from src.retrieval.embedder import HashingEmbedder, cosine_similarity
 from src.retrieval.retriever import HybridRetriever
 from src.tools.registry import build_default_registry
 
@@ -96,7 +96,7 @@ def retrieval_evaluation(retriever: HybridRetriever, dataset: list[dict[str, obj
         "recall_at_3": _percent(sum(row["hit_at_3"] for row in rows), len(rows)),
         "recall_at_5": _percent(sum(row["hit_at_5"] for row in rows), len(rows)),
     }
-    return {"metrics": metrics, "cases": rows}
+    return {"metrics": metrics, "by_category": {"knowledge": metrics}, "cases": rows}
 
 
 def run_cases(agent: CampusServiceAgent, dataset: list[dict[str, object]], label: str) -> list[dict[str, object]]:
@@ -175,6 +175,27 @@ def answer_metrics(rows: list[dict[str, object]]) -> dict[str, object]:
 def agent_metrics(rows: list[dict[str, object]]) -> dict[str, object]:
     tool_rows = [row for row in rows if row["tool_name"] or row["category"] == "status"]
     unknown_rows = [row for row in rows if row["category"] in {"unknown", "boundary"}]
+    by_category: dict[str, dict[str, float | None]] = {}
+    for category in sorted({str(row["category"]) for row in rows}):
+        subset = [row for row in rows if row["category"] == category]
+        subset_tool = [row for row in subset if row["tool_name"] or row["category"] == "status"]
+        subset_unknown = [row for row in subset if row["category"] in {"unknown", "boundary"}]
+        by_category[category] = {
+            "tool_selection_accuracy": _percent(
+                sum(row["tool_selection_correct"] for row in subset), len(subset)
+            ),
+            "tool_argument_accuracy": (
+                _percent(sum(row["tool_arguments_correct"] for row in subset_tool), len(subset_tool))
+                if subset_tool
+                else None
+            ),
+            "task_completion_rate": _percent(sum(row["task_complete"] for row in subset), len(subset)),
+            "unknown_handling_rate": (
+                _percent(sum(row["unknown_handled"] for row in subset_unknown), len(subset_unknown))
+                if subset_unknown
+                else None
+            ),
+        }
     return {
         "metrics": {
             "tool_selection_accuracy": _percent(sum(row["tool_selection_correct"] for row in rows), len(rows)),
@@ -182,6 +203,7 @@ def agent_metrics(rows: list[dict[str, object]]) -> dict[str, object]:
             "task_completion_rate": _percent(sum(row["task_complete"] for row in rows), len(rows)),
             "unknown_handling_rate": _percent(sum(row["unknown_handled"] for row in unknown_rows), len(unknown_rows)),
         },
+        "by_category": by_category,
         "cases": rows,
     }
 
@@ -212,6 +234,37 @@ def chunk_experiments(dataset: list[dict[str, object]]) -> dict[str, object]:
     return {"experiments": output}
 
 
+def embedding_experiment() -> dict[str, object]:
+    documents = load_documents(PYTHON_ROOT / "docs")
+    chunks = chunk_documents(documents, FINAL.chunk_size, FINAL.overlap)
+    selected = chunks[:20]
+    embedder = HashingEmbedder(settings.embedding_dimension)
+    vectors = embedder.embed_batch([chunk.text for chunk in selected])
+    norms = [math.sqrt(sum(value * value for value in vector)) for vector in vectors]
+    comparison_texts = ["图书馆开放时间", "图书馆周末开馆", "宿舍报修流程"]
+    comparison_vectors = embedder.embed_batch(comparison_texts)
+    return {
+        "embedding": embedder.name,
+        "dimension": embedder.dimension,
+        "selected_chunk_count": len(selected),
+        "selected_chunk_ids": [chunk.chunk_id for chunk in selected],
+        "minimum_l2_norm": round(min(norms), 6),
+        "maximum_l2_norm": round(max(norms), 6),
+        "similarity_checks": [
+            {
+                "left": comparison_texts[0],
+                "right": comparison_texts[1],
+                "cosine": round(cosine_similarity(comparison_vectors[0], comparison_vectors[1]), 6),
+            },
+            {
+                "left": comparison_texts[0],
+                "right": comparison_texts[2],
+                "cosine": round(cosine_similarity(comparison_vectors[0], comparison_vectors[2]), 6),
+            },
+        ],
+    }
+
+
 def prompt_experiment(dataset: list[dict[str, object]]) -> dict[str, object]:
     questions = [item["question"] for item in dataset if item["category"] == "knowledge"][:5]
     return {
@@ -223,8 +276,13 @@ def prompt_experiment(dataset: list[dict[str, object]]) -> dict[str, object]:
     }
 
 
-def failure_cases(baseline_rows: list[dict[str, object]], baseline_retrieval: dict[str, object]) -> list[dict[str, object]]:
+def failure_cases(
+    baseline_rows: list[dict[str, object]],
+    baseline_retrieval: dict[str, object],
+    dataset: list[dict[str, object]],
+) -> list[dict[str, object]]:
     failures = []
+    expected_by_id = {str(item["id"]): item for item in dataset}
     for row in baseline_retrieval["cases"]:
         if not row["hit_at_3"]:
             failures.append(
@@ -241,12 +299,18 @@ def failure_cases(baseline_rows: list[dict[str, object]], baseline_retrieval: di
             )
     for row in baseline_rows:
         if not row["task_complete"]:
+            expected = expected_by_id[str(row["id"])]
             failures.append(
                 {
                     "id": f"F-ANS-{row['id']}",
                     "question": row["question"],
                     "system_output": row["answer"],
-                    "expected": "包含冻结测试集中的期望关键词与路由",
+                    "expected": {
+                        "answer_keywords": expected.get("expected_answer", []),
+                        "source": expected.get("expected_source"),
+                        "tool": expected.get("expected_tool"),
+                        "arguments": expected.get("expected_arguments", {}),
+                    },
                     "type": (
                         "Unknown Handling Failure"
                         if row["route"] == "unknown" and row["category"] != "unknown"
@@ -287,6 +351,42 @@ def failure_cases(baseline_rows: list[dict[str, object]], baseline_retrieval: di
     return failures[:6]
 
 
+def write_human_evaluation_handoff(rows: list[dict[str, object]]) -> None:
+    path = OUTPUT_DIR / "human_evaluation_v1.csv"
+    fields = [
+        "id", "question", "answer", "citation_ids", "evidence_excerpt",
+        "suggested_correctness", "suggested_faithfulness", "suggested_citation_accuracy",
+        "human_correctness", "human_faithfulness", "human_citation_accuracy",
+        "human_confirmed", "reviewer", "review_date", "notes", "evidence_state",
+    ]
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        for row in [item for item in rows if item["category"] == "knowledge"][:10]:
+            writer.writerow(
+                {
+                    "id": row["id"],
+                    "question": row["question"],
+                    "answer": row["answer"],
+                    "citation_ids": "|".join(row["citations"]),
+                    "evidence_excerpt": " | ".join(
+                        str(item["text"]) for item in row["retrieval"][:1]
+                    ),
+                    "suggested_correctness": str(bool(row["correct"])).lower(),
+                    "suggested_faithfulness": str(bool(row["faithful"])).lower(),
+                    "suggested_citation_accuracy": str(bool(row["citation_accurate"])).lower(),
+                    "human_correctness": "",
+                    "human_faithfulness": "",
+                    "human_citation_accuracy": "",
+                    "human_confirmed": "false",
+                    "reviewer": "",
+                    "review_date": "",
+                    "notes": "",
+                    "evidence_state": "draft_advisory",
+                }
+            )
+
+
 def write_json(name: str, payload: object) -> None:
     (OUTPUT_DIR / name).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -312,10 +412,12 @@ def main() -> None:
     write_json("agent_metrics.json", agent_metrics(final_rows))
     write_json("engineering_metrics.json", engineering_metrics(final_rows, test_pass_rate=100.0))
     write_json("chunking_experiments.json", chunk_experiments(dataset))
+    write_json("embedding_experiment.json", embedding_experiment())
     write_json("prompt_experiment.json", prompt_experiment(dataset))
-    write_json("failure_cases.json", failure_cases(baseline_rows, baseline_retrieval))
+    write_json("failure_cases.json", failure_cases(baseline_rows, baseline_retrieval, dataset))
     write_json("raw_results_baseline.json", baseline_rows)
     write_json("raw_results_final.json", final_rows)
+    write_human_evaluation_handoff(final_rows)
 
     with (OUTPUT_DIR / "implementation_comparison.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
@@ -325,6 +427,7 @@ def main() -> None:
                 "python_latency", "ai_coding_latency",
                 "python_error", "ai_coding_error",
             ],
+            lineterminator="\n",
         )
         writer.writeheader()
         for case_id in ("K01", "S01"):

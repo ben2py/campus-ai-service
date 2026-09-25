@@ -77,6 +77,10 @@ class AgentTests(unittest.TestCase):
         memory.clear("s")
         self.assertEqual(memory.recent("s"), [])
 
+    def test_agent_loop_rejects_unsafe_step_limit(self):
+        with self.assertRaises(ValueError):
+            CampusServiceAgent(self.agent.rag, self.agent.tools, ConversationMemory(2), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

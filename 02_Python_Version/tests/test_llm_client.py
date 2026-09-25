@@ -33,6 +33,18 @@ class LLMClientTests(unittest.TestCase):
         self.assertEqual(request.full_url, "https://example.invalid/v1/chat/completions")
         self.assertNotIn(b"test-key", request.data)
 
+    @patch("urllib.request.urlopen", return_value=_FakeHTTPResponse())
+    def test_openai_compatible_grounded_answer_builds_context(self, mocked_open):
+        client = OpenAICompatibleClient("https://example.invalid/v1", "test-key", "test-model")
+        result = client.answer(
+            "图书馆周末几点开馆？",
+            [{"source_id": "D08", "section": "开放时间", "text": "周末08:30开馆。"}],
+        )
+        self.assertEqual(result.mode, "api")
+        request = mocked_open.call_args.args[0]
+        self.assertIn("D08".encode(), request.data)
+        self.assertIn("08:30".encode(), request.data)
+
 
 if __name__ == "__main__":
     unittest.main()

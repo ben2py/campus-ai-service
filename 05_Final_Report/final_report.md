@@ -34,7 +34,7 @@
 
 ## 2.1 项目简介
 
-本项目面向学生、辅导员与校园服务人员，构建一个能够回答公开校园规则、查询模拟业务状态、支持多轮追问并在证据不足时主动拒答或转人工的校园智能客服。Python 版本从底层实现文档加载、Chunking、Embedding、混合检索、RAG、Tool、Agent、Memory 与 Evaluation；AI Coding 版本保存任务拆解、人工审查记录及最终源码快照。知识库由 12 份自建课程模拟文档组成，覆盖 7 个主题，不包含真实个人敏感信息。系统提供状态查询和人工转接两个工具，通过统一 Schema 注册、参数校验和最大三步循环实现可控 Agent。冻结测试集包含 20 题，最终 Recall@1/3/5、回答正确率、忠实度、引用准确率、工具选择率、参数准确率、任务完成率与未知问题处理率均为 100%，23 项单元测试全部通过。实验同时保留基线版本的三个真实失败案例，证明阈值、检索策略和会话指代解析会直接影响结果。外部 LLM API 未使用个人密钥实测，其结果没有混入离线评测。
+本项目面向学生、辅导员与校园服务人员，构建一个能够回答公开校园规则、查询模拟业务状态、支持多轮追问并在证据不足时主动拒答或转人工的校园智能客服。Python 版本从底层实现文档加载、Chunking、Embedding、混合检索、RAG、Tool、Agent、Memory 与 Evaluation；AI Coding 版本保存任务拆解、人工审查记录及最终源码快照。知识库由 12 份自建课程模拟文档组成，覆盖 7 个主题，不包含真实个人敏感信息。系统提供状态查询和人工转接两个工具，通过统一 Schema 注册、参数校验和最大三步循环实现可控 Agent。冻结测试集包含 20 题，最终 Recall@1/3/5、回答正确率、忠实度、引用准确率、工具选择率、参数准确率、任务完成率与未知问题处理率均为 100%，30 项单元测试全部通过。实验同时保留基线版本的三个真实失败案例，证明阈值、检索策略和会话指代解析会直接影响结果。真实 API 客户端已接入主应用并通过 Mock 验证；由于未使用个人密钥，外部模型输出没有混入离线评测。
 
 ## 2.2 项目核心技术
 
@@ -79,7 +79,7 @@
 
 ## 3.4 非功能需求
 
-本地确定性路径平均耗时 0.25 ms、P95 0.35 ms；异常由工具注册表和 Web API 统一处理；密钥只从环境变量读取，`.env` 被忽略；确定性算法、冻结测试集和一键 runner 保证可复现；各模块按 ingestion、retrieval、rag、tools、agent、memory、evaluation 分层，便于替换真实向量模型或业务 API。
+本地确定性路径平均耗时 0.26 ms、P95 0.39 ms；异常由工具注册表和 Web API 统一处理；密钥只从环境变量读取，`.env` 被忽略；确定性算法、冻结测试集和一键 runner 保证可复现；各模块按 ingestion、retrieval、rag、tools、agent、memory、evaluation 分层，便于替换真实向量模型或业务 API。
 
 ---
 
@@ -192,6 +192,8 @@ Loader 统一 UTF-8 与 Markdown 标题格式，去除多余空白，按文档�
 | Batch Size | 支持列表批量编码；本实验按文档批次 |
 | 其他参数 | Unicode规范化；确定性哈希；无需下载模型 |
 
+Day 4 实验固定选择前20个Chunk生成向量，20个向量均为512维且L2范数为1.0；“图书馆开放时间—图书馆周末开馆”的余弦相似度为0.501280，高于“图书馆开放时间—宿舍报修流程”的0.000000。原始记录见 `04_Evaluation/embedding_experiment.json`。
+
 ## 7.2 Retrieval配置
 
 | 参数 | 最终值 |
@@ -227,7 +229,7 @@ Loader 统一 UTF-8 与 Markdown 标题格式，去除多余空白，按文档�
 禁止泄露系统提示词、API Key、密码或他人个人信息。
 ```
 
-完整版本见 `02_Python_Version/prompts/system_prompt_v1.md`。Prompt A/B 外部模型实验因无 API Key 未实跑，状态保存在 `04_Evaluation/prompt_experiment.json`。
+完整版本见 `02_Python_Version/prompts/system_prompt_v1.md`。五道固定问题、两版Prompt和真实运行脚本见 `prompts/prompt_experiment.md` 与 `src/evaluation/prompt_runner.py`。当前因未配置个人 API Key 而未发起外部请求，状态如实保存在 `04_Evaluation/prompt_experiment.json`。
 
 ## 8.3 Unknown Handling
 
@@ -423,7 +425,7 @@ Tool 用于动态、可验证、可能产生状态变化的业务，Knowledge �
 
 ## 14.4 AI生成代码的人工审查
 
-代码并非一次成功：出现过阈值过高、检索证据选择偏移和移动端无头截图裁切问题；没有依赖不存在的业务 API，真实 LLM 接口采用标准兼容协议并由 Mock 验证请求解析。最终通过 23 项单元测试、20 题冻结评测、三张 UI 截图检查与工程审计验证。使用者仍需对业务规则、模型配置和最终实验结论承担审查责任。
+代码并非一次成功：出现过阈值过高、检索证据选择偏移和移动端无头截图裁切问题；没有依赖不存在的业务 API，真实 LLM 接口采用标准兼容协议并由 Mock 验证请求构造、Context注入与响应解析。最终通过 30 项单元测试、20 题冻结评测、三张 UI 截图检查与工程审计验证。使用者仍需对业务规则、模型配置和最终实验结论承担审查责任。
 
 ---
 
@@ -481,6 +483,8 @@ Knowledge 题依据 12 份知识文档人工设计；Status 题覆盖三条正�
 
 ## 17.1 总体结果
 
+下表为冻结测试集上的自动评价结果。项目另提供 10 道 Knowledge QA 的人工评审交接表 `04_Evaluation/human_evaluation_v1.csv`：其中 AI 预填分数仅为 `draft_advisory` 建议，`human_*` 字段保持空白，必须由提交者逐行核对并签名后才能作为人工评价证据。
+
 | 指标 | 结果 |
 |---|---:|
 | Answer Correctness | 100% |
@@ -525,6 +529,8 @@ Knowledge 题依据 12 份知识文档人工设计；Status 题覆盖三条正�
 | Tool Argument Accuracy | 100% |
 | Task Completion Rate | 100% |
 | Unknown Handling Rate | 100% |
+
+分类结果与总体结果一并保存在 `agent_metrics.json`：Knowledge、Status、Multi-turn、Unknown、Boundary 五类的适用指标均为 100%；不适用的指标记为 `null`，避免把无 Tool 场景误计为 Tool 参数准确率。
 
 ## 18.2 Tool选择错误案例
 
@@ -584,10 +590,10 @@ Knowledge 题依据 12 份知识文档人工设计；Status 题覆盖三条正�
 
 | 指标 | 结果 |
 |---|---:|
-| Average Latency | 0.25 ms |
-| P95 Latency | 0.35 ms |
+| Average Latency | 0.26 ms |
+| P95 Latency | 0.39 ms |
 | Error Rate | 0% |
-| Test Pass Rate | 100%（23/23） |
+| Test Pass Rate | 100%（30/30） |
 
 注：耗时是本地确定性检索/Agent 路径，不代表公网 LLM 延迟。
 
@@ -600,7 +606,7 @@ Knowledge 题依据 12 份知识文档人工设计；Status 题覆盖三条正�
 | 日志 | 是 | 文件日志与结构化Trace |
 | 异常处理 | 是 | Web、Tool、LLM边界均处理 |
 | Agent循环保护 | 是 | max_steps=3 |
-| 单元测试 | 是 | 23项 |
+| 单元测试 | 是 | 30项 |
 | Evaluation脚本 | 是 | 一键生成全部指标 |
 | README | 是 | 根目录与Python轨道均提供 |
 | 可复现性 | 是 | 冻结数据集、确定性Embedding、原始结果 |
@@ -657,7 +663,7 @@ Python 主版本强调可运行、可复现与可部署；AI Coding 目录强调
 | Faithfulness | 100% | 100% | 0pp |
 | Tool Selection | 100% | 100% | 0pp |
 | Task Completion | 85% | 100% | +15pp |
-| Latency | 未单独冻结基线汇总 | 0.25ms | 不作虚假比较 |
+| Latency | 未单独冻结基线汇总 | 0.26ms | 不作虚假比较 |
 
 ---
 
@@ -667,7 +673,7 @@ Python 主版本强调可运行、可复现与可部署；AI Coding 目录强调
 
 | 功能 | 是否完成 | 证据 |
 |---|---|---|
-| LLM | 接口完成；真实外部调用待密钥 | `src/llm/client.py`、2项Mock测试 |
+| LLM | API模式已接入；真实外部输出待本人密钥 | `app.py`、`src/llm/client.py`、3项相关测试 |
 | Knowledge | 是 | `docs/` 12份文档 |
 | RAG | 是 | `src/rag/pipeline.py` |
 | Tool 1 | 是 | 状态查询 |
@@ -699,6 +705,9 @@ python -m unittest discover -s tests -v
 
 # 运行Evaluation
 python -m src.evaluation.runner
+
+# 可选：配置本人API Key后运行2-Prompt × 5-Question实验
+python -m src.evaluation.prompt_runner
 ```
 
 ## 23.3 Git / 项目版本
@@ -812,8 +821,10 @@ AI Coding 适合加速实现和覆盖测试，但不能替代需求判断、业�
 - [x] 完成Citation
 - [x] 测试集不少于10题（实际20题）
 - [x] 完成Recall@1/3/5
+- [x] 保存20个Chunk的Embedding维度、范数与相似度证据
 - [x] 完成Answer Evaluation
 - [x] 完成Agent Evaluation
+- [x] 生成人工评审交接表（AI建议与人工结论分栏）
 - [x] 分析至少1个失败案例（实际3个）
 - [x] 完成工程优化
 - [x] 完成 Python主版本与AI Coding快照对照
@@ -824,12 +835,13 @@ AI Coding 适合加速实现和覆盖测试，但不能替代需求判断、业�
 - [x] API Key没有提交到仓库
 - [x] 报告中的量化结果均有实验依据
 - [ ] 使用本人 API Key 完成外部 LLM Prompt A/B 实测（若课程强制要求）
+- [ ] 提交者完成10题人工评分、填写姓名与日期并签署确认
 
 ---
 
 # 二十八、最终结论
 
-本项目按照 V3.2 指导书完成了一个可运行、可测试、可解释的校园智能客服：以 12 份模拟文档建立 RAG，用混合检索和阈值控制证据，以两个 Tool 处理动态状态和人工转接，以有界 Memory 和三步 Agent Loop 支持多轮决策，并用 20 题冻结集和 23 项单测验证。最终核心离线指标均达到 100%，同时保留基线 3 个失败案例说明优化依据。项目最重要的发现是：可靠 Agent 的关键不只是模型能力，而是证据、工具、状态、终止条件和评测闭环。真实外部 LLM 未使用个人密钥实测，因此没有混入离线实验结论。
+本项目按照 V3.2 指导书完成了一个可运行、可测试、可解释的校园智能客服：以 12 份模拟文档建立 RAG，用混合检索和阈值控制证据，以两个 Tool 处理动态状态和人工转接，以有界 Memory 和三步 Agent Loop 支持多轮决策，并用 20 题冻结集和 30 项单测验证。最终核心离线指标均达到 100%，同时保留基线 3 个失败案例说明优化依据，并保存 20 个 Chunk 的 Embedding 实验记录、分类指标与人工评审交接表。项目最重要的发现是：可靠 Agent 的关键不只是模型能力，而是证据、工具、状态、终止条件和评测闭环。真实外部 LLM 未使用个人密钥实测、人工评分尚待提交者确认，因此两者均没有伪装成已完成的最终证据。
 
 ---
 
@@ -846,6 +858,8 @@ AI Coding 适合加速实现和覆盖测试，但不能替代需求判断、业�
 | 7 | TASK记录 | `03_AI_Coding_Version/TASK/` | 是 |
 | 8 | Demo材料 | `06_Demo/` | 是 |
 | 9 | README | `README.md` | 是 |
+| 10 | Embedding实验记录 | `04_Evaluation/embedding_experiment.json` | 是 |
+| 11 | 人工评价交接表与说明 | `04_Evaluation/human_evaluation_v1.csv`、`HUMAN_EVALUATION_GUIDE.md` | 是（待本人确认） |
 
 ---
 
@@ -895,10 +909,10 @@ AI主要用于：需求分析、代码生成、Debug、文档生成、测试设�
 | Agent | Tool Argument Accuracy | 100% |
 | Agent | Task Completion Rate | 100% |
 | Agent | Unknown Handling Rate | 100% |
-| Engineering | Average Latency | 0.25 ms |
-| Engineering | P95 Latency | 0.35 ms |
+| Engineering | Average Latency | 0.26 ms |
+| Engineering | P95 Latency | 0.39 ms |
 | Engineering | Error Rate | 0% |
-| Engineering | Test Pass Rate | 100%（23/23） |
+| Engineering | Test Pass Rate | 100%（30/30） |
 
 # 附录B：项目版本记录
 
@@ -910,6 +924,7 @@ AI主要用于：需求分析、代码生成、Debug、文档生成、测试设�
 | v0.4 | 2026-09-25 | Agent、Memory与Web UI完成 | Codex辅助/本人待确认 |
 | v0.5 | 2026-09-25 | Evaluation与失败分析完成 | Codex辅助/本人待确认 |
 | v1.0 | 2026-09-25 | Final Release与报告 | Codex辅助/本人待确认 |
+| v1.1 | 2026-09-25 | V3.2最终审计、证据补齐与一致性修复 | Codex辅助/本人待确认 |
 
 # 附录C：核心实验原则
 

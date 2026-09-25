@@ -35,6 +35,7 @@ class Settings:
     llm_api_key: str = os.getenv("LLM_API_KEY", "")
     llm_model: str = os.getenv("LLM_MODEL", "gpt-4.1-mini")
     llm_mode: str = os.getenv("LLM_MODE", "offline")
+    llm_timeout_seconds: int = int(os.getenv("LLM_TIMEOUT_SECONDS", "30"))
     chunk_size: int = int(os.getenv("CHUNK_SIZE", "260"))
     chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "40"))
     embedding_dimension: int = int(os.getenv("EMBEDDING_DIMENSION", "512"))

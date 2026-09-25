@@ -85,6 +85,8 @@ Windows PowerShell 使用：
 
 默认 `LLM_MODE=offline`，使用只依据检索证据的确定性生成器。代码包含 OpenAI-compatible HTTP 客户端，但外部模型调用不属于冻结离线评测；密钥只能保存在本地 `.env`，不得提交仓库。
 
+需要验证外部模型时，将 `.env` 中的 `LLM_MODE` 改为 `api`，并填写兼容 Chat Completions 协议的 `LLM_BASE_URL`、`LLM_MODEL` 与 `LLM_API_KEY`。完成配置后可运行 `python -m src.evaluation.prompt_runner`，执行 2 种 Prompt × 5 个问题的独立实验；未配置密钥时脚本会安全退出，不会生成伪造结果。
+
 ## API接口
 
 ### 健康检查
@@ -123,7 +125,7 @@ cd /Users/cii/人工智能课程设计/campus-ai-service/02_Python_Version
 python -m unittest discover -s tests -v
 ```
 
-当前结果：`23/23` 项测试通过。
+当前结果：`30/30` 项测试通过。
 
 ## Evaluation
 
@@ -144,11 +146,13 @@ python -m src.evaluation.runner
 | Agent | Tool Argument Accuracy | 100% |
 | Agent | Task Completion Rate | 100% |
 | Agent | Unknown Handling Rate | 100% |
-| Engineering | Average Latency | 0.25 ms |
-| Engineering | P95 Latency | 0.35 ms |
+| Engineering | Average Latency | 0.26 ms |
+| Engineering | P95 Latency | 0.39 ms |
 | Engineering | Error Rate | 0% |
 
 延迟只代表本地确定性执行路径，不代表公网大模型 API 延迟。逐题结果位于 `04_Evaluation/raw_results_final.json`。
+
+补充证据包括：`embedding_experiment.json` 中的20个Chunk向量记录、各类别Retrieval/Agent指标，以及供提交者逐行确认的 `human_evaluation_v1.csv`。人工表中的AI预填值属于建议，必须由本人确认后才能视为人工评价。
 
 ## 演示问题
 
@@ -166,6 +170,7 @@ python -m src.evaluation.runner
 - [最终实验报告](05_Final_Report/final_report.md)
 - [Python运行说明](02_Python_Version/README.md)
 - [Evaluation说明](04_Evaluation/README.md)
+- [V3.2最终要求审计](05_Final_Report/FINAL_REQUIREMENTS_AUDIT.md)
 - [AI Coding开发日志](03_AI_Coding_Version/development_log.md)
 - [演示脚本](06_Demo/demo_script.md)
 - [待本人填写信息](05_Final_Report/待补充信息.md)
@@ -186,5 +191,5 @@ python -m src.evaluation.runner
 ## 项目版本
 
 - Branch：`main`
-- Release Tag：`v1.0`
+- Release Tag：`v1.1`
 - 使用 `git rev-parse HEAD` 查看当前提交。

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from tempfile import TemporaryDirectory
 from pathlib import Path
 
 from src.ingestion.chunker import chunk_documents
@@ -44,6 +45,15 @@ class IngestionRetrievalTests(unittest.TestCase):
         self.assertEqual(len(results), 5)
         self.assertEqual(results[0].chunk.document_id, "D08")
         self.assertGreaterEqual(results[0].score, results[-1].score)
+
+    def test_loader_supports_txt_and_skips_empty_file(self):
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "T01_notice.txt").write_text("校园服务通知", encoding="utf-8")
+            (directory / "T02_empty.txt").write_text("", encoding="utf-8")
+            documents = load_documents(directory)
+            self.assertEqual(len(documents), 1)
+            self.assertEqual(documents[0].source_path, "T01_notice.txt")
 
 
 if __name__ == "__main__":

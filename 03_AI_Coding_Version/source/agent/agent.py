@@ -47,10 +47,38 @@ class CampusServiceAgent:
         memory: ConversationMemory,
         max_steps: int = 3,
     ):
+        if max_steps < 2:
+            raise ValueError("Agent max_steps 不应小于 2。")
         self.rag = rag
         self.tools = tools
         self.memory = memory
         self.max_steps = max_steps
+
+    def _execute_tool_loop(
+        self,
+        name: str,
+        arguments: dict[str, str],
+        trace: list[dict[str, object]],
+    ) -> dict[str, object]:
+        """在显式步数上限内完成 Tool Call → Observation。"""
+        pending = True
+        result: dict[str, object] | None = None
+        for step_number in range(2, self.max_steps + 1):
+            if pending:
+                trace.append(
+                    {"step": step_number, "action": "tool_call", "tool": name, "arguments": arguments}
+                )
+                result = self.tools.execute(name, arguments)
+                pending = False
+                continue
+            trace.append({"step": step_number, "action": "observation", "result": result})
+            return result or {"ok": False, "error": "empty_observation", "message": "Tool未返回结果。"}
+        trace.append({"step": self.max_steps, "action": "loop_exhausted"})
+        return {
+            "ok": False,
+            "error": "max_steps_exceeded",
+            "message": "Agent达到最大步骤，已停止执行。",
+        }
 
     @staticmethod
     def _extract_ids(question: str) -> tuple[str | None, str | None]:
@@ -114,9 +142,7 @@ class CampusServiceAgent:
             )
         if any(term in question for term in ("人工客服", "转人工", "找人工", "人工处理")):
             arguments = {"reason": question}
-            trace.append({"step": 2, "action": "tool_call", "tool": "handoff_to_human", "arguments": arguments})
-            result = self.tools.execute("handoff_to_human", arguments)
-            trace.append({"step": 3, "action": "observation", "result": result})
+            result = self._execute_tool_loop("handoff_to_human", arguments, trace)
             return self._finish(
                 started,
                 session_id,
@@ -141,11 +167,7 @@ class CampusServiceAgent:
                     trace,
                 )
             arguments = {"student_id": student_id, "application_id": application_id}
-            trace.append(
-                {"step": 2, "action": "tool_call", "tool": "query_application_status", "arguments": arguments}
-            )
-            result = self.tools.execute("query_application_status", arguments)
-            trace.append({"step": 3, "action": "observation", "result": result})
+            result = self._execute_tool_loop("query_application_status", arguments, trace)
             return self._finish(
                 started,
                 session_id,

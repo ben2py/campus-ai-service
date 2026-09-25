@@ -31,6 +31,13 @@
     "recall_at_3": 100.0,
     "recall_at_5": 100.0
   },
+  "by_category": {
+    "knowledge": {
+      "recall_at_1": 100.0,
+      "recall_at_3": 100.0,
+      "recall_at_5": 100.0
+    }
+  },
   "cases": [
     {
       "id": "K01",

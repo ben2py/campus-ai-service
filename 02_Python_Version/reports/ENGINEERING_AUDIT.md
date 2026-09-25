@@ -9,6 +9,6 @@
 | 循环 | Agent无限调用 | `MAX_AGENT_STEPS=3` |
 | 输入 | 空问题、多余Tool参数 | 前端与Registry双重校验 |
 | 数据 | 泄露真实个人信息 | 只使用S1001等明示模拟数据 |
-| 测试 | 手工点击不可重现 | 23个`unittest`用例与一键Evaluation脚本 |
+| 测试 | 手工点击不可重现 | 30个`unittest`用例与一键Evaluation脚本 |
 
 当前剩余风险：真实LLM API和生产身份认证未在当前环境实测。

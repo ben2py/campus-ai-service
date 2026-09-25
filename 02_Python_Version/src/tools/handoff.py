@@ -4,23 +4,25 @@ from __future__ import annotations
 
 import sqlite3
 import uuid
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
 
 def initialize_handoff_database(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(path) as connection:
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS handoff_tickets (
-                ticket_id TEXT PRIMARY KEY,
-                reason TEXT NOT NULL,
-                status TEXT NOT NULL,
-                timestamp TEXT NOT NULL
+    with closing(sqlite3.connect(path)) as connection:
+        with connection:
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS handoff_tickets (
+                    ticket_id TEXT PRIMARY KEY,
+                    reason TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    timestamp TEXT NOT NULL
+                )
+                """
             )
-            """
-        )
 
 
 def handoff_to_human(database_path: Path, reason: str) -> dict[str, object]:
@@ -29,11 +31,12 @@ def handoff_to_human(database_path: Path, reason: str) -> dict[str, object]:
         return {"ok": False, "error": "invalid_reason", "message": "请说明需要人工处理的原因。"}
     ticket_id = f"HF-{uuid.uuid4().hex[:8].upper()}"
     timestamp = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
-    with sqlite3.connect(database_path) as connection:
-        connection.execute(
-            "INSERT INTO handoff_tickets VALUES (?, ?, ?, ?)",
-            (ticket_id, reason[:500], "queued", timestamp),
-        )
+    with closing(sqlite3.connect(database_path)) as connection:
+        with connection:
+            connection.execute(
+                "INSERT INTO handoff_tickets VALUES (?, ?, ?, ?)",
+                (ticket_id, reason[:500], "queued", timestamp),
+            )
     return {
         "ok": True,
         "ticket_id": ticket_id,

@@ -1,0 +1,35 @@
+test_agent_loop_rejects_unsafe_step_limit (test_agent.AgentTests.test_agent_loop_rejects_unsafe_step_limit) ... ok
+test_boundary_request_is_refused (test_agent.AgentTests.test_boundary_request_is_refused) ... ok
+test_explicit_handoff_creates_ticket (test_agent.AgentTests.test_explicit_handoff_creates_ticket) ... ok
+test_knowledge_question_has_citation (test_agent.AgentTests.test_knowledge_question_has_citation) ... ok
+test_memory_is_bounded_and_clearable (test_agent.AgentTests.test_memory_is_bounded_and_clearable) ... ok
+test_missing_status_arguments_requests_clarification (test_agent.AgentTests.test_missing_status_arguments_requests_clarification) ... ok
+test_multi_turn_reference_resolution (test_agent.AgentTests.test_multi_turn_reference_resolution) ... ok
+test_status_query_calls_correct_tool (test_agent.AgentTests.test_status_query_calls_correct_tool) ... ok
+test_unknown_question_refuses_to_invent (test_agent.AgentTests.test_unknown_question_refuses_to_invent) ... ok
+test_build_generator_supports_offline_and_api_modes (test_app.AppTests.test_build_generator_supports_offline_and_api_modes) ... ok
+test_chat_rejects_empty_with_clarification (test_app.AppTests.test_chat_rejects_empty_with_clarification) ... ok
+test_health (test_app.AppTests.test_health) ... ok
+test_index_has_accessible_form (test_app.AppTests.test_index_has_accessible_form) ... ok
+test_agent_reports_category_metrics (test_evaluation.EvaluationTests.test_agent_reports_category_metrics) ... ok
+test_embedding_experiment_uses_twenty_chunks (test_evaluation.EvaluationTests.test_embedding_experiment_uses_twenty_chunks) ... ok
+test_retrieval_reports_overall_and_category_metrics (test_evaluation.EvaluationTests.test_retrieval_reports_overall_and_category_metrics) ... ok
+test_chunker_rejects_invalid_overlap (test_ingestion_retrieval.IngestionRetrievalTests.test_chunker_rejects_invalid_overlap) ... ok
+test_chunks_never_mix_documents (test_ingestion_retrieval.IngestionRetrievalTests.test_chunks_never_mix_documents) ... ok
+test_embedding_batch_dimension_and_similarity (test_ingestion_retrieval.IngestionRetrievalTests.test_embedding_batch_dimension_and_similarity) ... ok
+test_loader_supports_txt_and_skips_empty_file (test_ingestion_retrieval.IngestionRetrievalTests.test_loader_supports_txt_and_skips_empty_file) ... ok
+test_loads_at_least_ten_documents_and_two_topics (test_ingestion_retrieval.IngestionRetrievalTests.test_loads_at_least_ten_documents_and_two_topics) ... ok
+test_retrieval_keeps_source_and_score (test_ingestion_retrieval.IngestionRetrievalTests.test_retrieval_keeps_source_and_score) ... ok
+test_api_key_is_required (test_llm_client.LLMClientTests.test_api_key_is_required) ... ok
+test_openai_compatible_grounded_answer_builds_context (test_llm_client.LLMClientTests.test_openai_compatible_grounded_answer_builds_context) ... ok
+test_openai_compatible_request_is_parsed (test_llm_client.LLMClientTests.test_openai_compatible_request_is_parsed) ... ok
+test_handoff_has_required_fields (test_tools.ToolTests.test_handoff_has_required_fields) ... ok
+test_not_found_record (test_tools.ToolTests.test_not_found_record) ... ok
+test_registry_rejects_missing_and_extra_arguments (test_tools.ToolTests.test_registry_rejects_missing_and_extra_arguments) ... ok
+test_three_normal_status_records (test_tools.ToolTests.test_three_normal_status_records) ... ok
+test_two_illegal_parameter_cases (test_tools.ToolTests.test_two_illegal_parameter_cases) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 0.043s
+
+OK

@@ -1,19 +1,29 @@
-# Audit Report -- 2026-09-25
+# 一致性审计报告（2026-09-25）
 
-## Summary
+## 结论
 
-- **Critical**: 0 issues
-- **High**: 0 issues
-- **Medium**: 0 unresolved issues
+- Critical：0项。
+- High：0项代码或文档缺失。
+- Medium：0项未解决的一致性问题。
+- 人工/凭证门槛：2项，已显式标记为未完成，未伪造结果。
 
-## Issues
+## 已核对项目
 
-| # | Severity | Category | Location | Issue | Current | Expected |
-|---|---|---|---|---|---|---|
-| 1 | Resolved | Numerical | 报告3.4、20.1、22.2、附录A与README | 重新运行评测后延迟数字发生变化 | 已统一为0.25 ms / 0.35 ms | 与`engineering_metrics.json`一致 |
-| 2 | Resolved | Cross-reference | Evaluation、报告21与README | 已删除的旧对照文件仍可能被引用 | 已统一为`implementation_comparison.csv` | 引用现有文件 |
-| 3 | Resolved | Terminology | 报告、README、TASK、审计材料 | 项目范围调整后仍残留外部平台待办 | 已全部移除 | 仅描述实际交付内容 |
+| 检查项 | 结果 | 证据 |
+|---|---|---|
+| 文档、主题、Chunk数量 | 一致：12 / 7 / 24 | `retrieval_metrics.json` |
+| 测试集规模与分类 | 一致：20题、5类 | `evaluation_v1.json` |
+| Retrieval指标 | 一致：Recall@1/3/5均100% | `retrieval_metrics.json` |
+| Answer指标 | 一致：三项均100% | `answer_metrics.json` |
+| Agent指标 | 一致：四项均100% | `agent_metrics.json` |
+| 工程指标 | 一致：平均0.26ms、P95 0.39ms、错误率0% | `engineering_metrics.json` |
+| 单元测试 | 一致：30/30通过，无ResourceWarning | `test_results.txt` |
+| Python与AI Coding源码快照 | 一致 | 两目录逐文件比对 |
+| 外部平台内容 | 无残留 | 全仓关键词检查 |
 
-## Recommendations
+## 证据门槛
 
-最终提交前若再次运行 Evaluation，应重新核对平均耗时和 P95，因为本地毫秒级计时会随机器负载轻微波动。文档数、主题数、Chunk数、测试集分布、Recall、Answer、Agent和测试通过率当前均与原始JSON一致。
+1. 外部 LLM 的2种Prompt×5题真实对照需要提交者提供自己的 API Key；当前状态为 `not_run_without_external_llm_api_key`。
+2. 10题人工评价已生成交接表，但 `human_*` 字段必须由提交者本人确认，当前不作为最终人工证据。
+
+如果重新运行 Evaluation，本地毫秒级延迟可能轻微波动，应以新生成的 `engineering_metrics.json` 为准同步报告。

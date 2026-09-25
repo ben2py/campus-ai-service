@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from src.llm.client import DeterministicGroundedClient, LLMResponse
+from src.llm.client import GroundedGenerator, LLMResponse
 from src.retrieval.retriever import HybridRetriever
 
 
@@ -23,7 +23,7 @@ class RAGPipeline:
     def __init__(
         self,
         retriever: HybridRetriever,
-        generator: DeterministicGroundedClient,
+        generator: GroundedGenerator,
         top_k: int = 3,
         threshold: float = 0.15,
     ):

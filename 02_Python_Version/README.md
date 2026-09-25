@@ -41,7 +41,7 @@ python -m src.evaluation.runner
 
 ## LLM API
 
-`src/llm/client.py`包含OpenAI-compatible API客户端。请在本地`.env`中配置`LLM_API_KEY`，禁止将密钥提交到仓库。当前冻结评测使用`deterministic-grounded-v1`，因此结果可复现；真实LLM的Prompt对照须配置API后另行运行，不与离线基线混记。
+`src/llm/client.py`包含OpenAI-compatible API客户端，并已接入主应用。默认使用`LLM_MODE=offline`；如需真实接口，在本地`.env`设置`LLM_MODE=api`、Base URL、模型和密钥。禁止提交密钥。当前冻结评测使用`deterministic-grounded-v1`，因此结果可复现；真实LLM的Prompt对照通过`python -m src.evaluation.prompt_runner`单独运行，不与离线基线混记。
 
 ## 演示编号
 

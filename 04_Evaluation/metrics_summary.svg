@@ -4,7 +4,7 @@
   <rect width="1200" height="680" fill="#f4f7f6"/>
   <rect x="50" y="42" width="1100" height="596" rx="24" fill="#ffffff" stroke="#cfdbd6"/>
   <text x="92" y="104" fill="#10211b" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif" font-size="34" font-weight="700">最终评测摘要</text>
-  <text x="92" y="140" fill="#52645e" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif" font-size="18">冻结测试集 20 题 · 23/23 单元测试通过 · 课程模拟数据</text>
+  <text x="92" y="140" fill="#52645e" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif" font-size="18">冻结测试集 20 题 · 30/30 单元测试通过 · 课程模拟数据</text>
   <g font-family="-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif">
     <g transform="translate(92 190)">
       <rect width="230" height="150" rx="16" fill="#eef3f1"/>
@@ -27,7 +27,7 @@
     <g transform="translate(866 190)">
       <rect width="230" height="150" rx="16" fill="#eef3f1"/>
       <text x="22" y="38" fill="#52645e" font-size="17">Engineering</text>
-      <text x="22" y="91" fill="#08785c" font-size="40" font-weight="750">0.25ms</text>
+      <text x="22" y="91" fill="#08785c" font-size="40" font-weight="750">0.26ms</text>
       <text x="22" y="124" fill="#10211b" font-size="16">平均本地推理耗时</text>
     </g>
     <text x="92" y="400" fill="#10211b" font-size="21" font-weight="700">优化前后</text>

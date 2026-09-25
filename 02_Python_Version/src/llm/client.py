@@ -11,6 +11,7 @@ import re
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from typing import Protocol
 
 
 class LLMError(RuntimeError):
@@ -22,6 +23,14 @@ class LLMResponse:
     text: str
     model: str
     mode: str
+
+
+class GroundedGenerator(Protocol):
+    """RAG 生成器统一接口，离线生成器与真实 API 客户端均实现它。"""
+
+    model: str
+
+    def answer(self, question: str, contexts: list[dict[str, str]]) -> LLMResponse: ...
 
 
 class OpenAICompatibleClient:
@@ -52,6 +61,34 @@ class OpenAICompatibleClient:
             return LLMResponse(data["choices"][0]["message"]["content"], self.model, "api")
         except (urllib.error.URLError, KeyError, json.JSONDecodeError) as exc:
             raise LLMError(f"LLM API 调用失败: {exc}") from exc
+
+    def answer(
+        self,
+        question: str,
+        contexts: list[dict[str, str]],
+        system_prompt: str | None = None,
+    ) -> LLMResponse:
+        """把检索证据转换为兼容 Chat Completions 的有据问答请求。"""
+        if not contexts:
+            return LLMResponse(
+                "当前知识库没有可靠依据，建议转人工服务中心确认。",
+                self.model,
+                "api",
+            )
+        evidence = "\n\n".join(
+            f"[{item['source_id']} {item['section']}]\n{item['text']}" for item in contexts
+        )
+        instruction = system_prompt or (
+            "你是校园公共服务助手。只能依据给定证据回答；证据不足时明确拒答；"
+            "不得补写政策、日期、金额或联系方式；回答末尾保留证据中的来源标记。"
+        )
+        return self.chat(
+            [
+                {"role": "system", "content": instruction},
+                {"role": "user", "content": f"证据：\n{evidence}\n\n问题：{question}"},
+            ],
+            temperature=0.0,
+        )
 
 
 class DeterministicGroundedClient:

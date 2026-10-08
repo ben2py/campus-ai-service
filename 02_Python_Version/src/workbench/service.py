@@ -14,6 +14,9 @@ from src.llm.client import DeterministicGroundedClient
 from src.llm.providers import ModelClient, PRESETS, ProviderError, validate_config
 from src.memory.conversation import ConversationMemory, Message
 from src.rag.pipeline import RAGPipeline
+from dataclasses import dataclass
+
+from src.retrieval.cloud_embedder import CloudEmbedder, EmbeddingCache
 from src.retrieval.embedder import HashingEmbedder
 from src.retrieval.retriever import HybridRetriever
 from src.tools.registry import build_default_registry
@@ -49,8 +52,17 @@ SYSTEM = """你是知行，“长安知行”系统的中文校园服务助手�
 """
 
 
+@dataclass(frozen=True)
+class KnowledgeIndex:
+    """一次回答使用的检索器，以及与其打分方式匹配的阈值。"""
+
+    retriever: HybridRetriever
+    threshold: float
+    backend: str  # "hashing" 或 "semantic:<模型 ID>"
+
+
 class Workbench:
-    def __init__(self, path, tools_path=None):
+    def __init__(self, path, tools_path=None, embedding=None):
         self.store = Store(path)
         self.tools = build_default_registry(tools_path or settings.database_path)
         self.builtin = load_documents(settings.docs_dir)
@@ -58,6 +70,18 @@ class Workbench:
         self.secrets = {}
         self.active = {}
         self.lock = threading.Lock()
+        # API 模式的云端语义向量；None 表示未配置，API 模式继续使用哈希向量。
+        self.embedding = embedding
+        self.embedding_cache = EmbeddingCache()
+        if embedding:
+            self.cloud_embedder()  # 启动时校验地址与模型 ID，配置错误立即报出
+
+    def cloud_embedder(self):
+        e = self.embedding
+        return CloudEmbedder(e.base_url, e.api_key, e.model, e.dimension, e.batch_size, e.timeout_seconds, self.embedding_cache)
+
+    def retrieval_backend(self, owner):
+        return "semantic:" + self.embedding.model if self.embedding and self.config(owner)["enabled"] else "hashing"
 
     def config(self, owner):
         saved = self.store.config(owner)
@@ -95,6 +119,25 @@ class Workbench:
     def retriever(self, owner, scope="simulation"):
         return HybridRetriever(chunk_documents(self.documents(owner, scope), settings.chunk_size, settings.chunk_overlap), HashingEmbedder(settings.embedding_dimension))
 
+    @staticmethod
+    def lexical_index(chunks):
+        return KnowledgeIndex(HybridRetriever(chunks, HashingEmbedder(settings.embedding_dimension)), settings.similarity_threshold, "hashing")
+
+    def knowledge_index(self, owner, scope):
+        """API 模式检索器：配置了云端 Embedding 时用语义向量，失败或未配置时回退哈希向量。
+
+        返回 (index, warning)；warning 非空表示本轮发生了回退。
+        """
+        chunks = chunk_documents(self.documents(owner, scope), settings.chunk_size, settings.chunk_overlap)
+        if not self.embedding:
+            return self.lexical_index(chunks), None
+        try:
+            # 首次调用会为全部文本块请求向量，之后命中缓存；上传新资料只请求新增部分。
+            retriever = HybridRetriever(chunks, self.cloud_embedder(), self.embedding.semantic_weight)
+            return KnowledgeIndex(retriever, self.embedding.threshold, "semantic:" + self.embedding.model), None
+        except ProviderError as exc:
+            return self.lexical_index(chunks), f"语义检索暂不可用（{exc}），本轮已回退字面检索。"
+
     def begin(self, owner, identity):
         self.store.messages(owner, identity)
         with self.lock:
@@ -126,9 +169,11 @@ class Workbench:
         try:
             yield {"event": "status", "message": "正在理解问题与会话上下文"}
             history = self.store.messages(owner, identity)[-12:]
-            retriever = self.retriever(owner, scope)
             c = self.config(owner)
+            index = None
             if not c["enabled"]:
+                # 离线模式固定使用本地哈希向量，保证无网络、可复现。
+                retriever = self.retriever(owner, scope)
                 if web:
                     yield {"event": "status", "message": "正在搜索公开网页"}
                     sources = search_web(question, c["search_key"])
@@ -162,6 +207,14 @@ class Workbench:
                 if not c["api_key"] and not local:
                     raise ProviderError("尚未配置 API Key，或服务重启后密钥已清除。请在模型设置中填写，或切回离线演示。")
                 client = ModelClient(c)
+                if event.is_set():
+                    raise ProviderError("已停止生成。")
+                if self.embedding:
+                    yield {"event": "status", "message": "正在准备语义检索索引"}
+                index, warning = self.knowledge_index(owner, scope)
+                if warning:
+                    yield {"event": "status", "message": warning}
+                    trace.append({"step": 0, "action": "retrieval_fallback", "message": warning})
                 state = client.start(SYSTEM.format(date=date.today().isoformat(), scope=SCOPES[scope]["notice"]), [{"role": h["role"], "content": h["content"][:10000]} for h in history] + [{"role": "user", "content": question}])
                 schemas = [search_schema("search_knowledge", "检索校园规则与用户上传资料；校园问题必须使用"), *self.tools.schemas]
                 if web:
@@ -187,12 +240,12 @@ class Workbench:
                         if calls_count > 12:
                             raise ProviderError("已达到工具调用上限，执行已安全停止。")
                         name, args = call["name"], call["arguments"]
-                        yield {"event": "status", "message": {"search_knowledge": "正在检索校园知识库", "search_web": "正在检索公开网页", "query_application_status": "正在查询模拟业务记录", "handoff_to_human": "正在创建本地模拟工单"}.get(name, "正在校验工具请求")}
+                        yield {"event": "status", "message": {"search_knowledge": "正在语义检索校园知识库" if index.backend != "hashing" else "正在检索校园知识库", "search_web": "正在检索公开网页", "query_application_status": "正在查询模拟业务记录", "handoff_to_human": "正在创建本地模拟工单"}.get(name, "正在校验工具请求")}
                         cache_key = json.dumps([name, args], sort_keys=True, ensure_ascii=False)
                         if cache_key in cache:
                             output = cache[cache_key]
                         else:
-                            output = self.execute(name, args, schemas, retriever, web, c, question, sources, scope)
+                            output = self.execute(name, args, schemas, index, web, c, question, sources, scope)
                             cache[cache_key] = output
                         trace.append({"step": step + 1, "action": "tool_call", "tool": name, "arguments": args, "result": output})
                         results.append(output)
@@ -200,10 +253,11 @@ class Workbench:
                 if not answer:
                     raise ProviderError("模型未生成最终回答，或已达到 6 轮上限；请换用支持工具调用的模型或简化问题。")
                 # Never expose fabricated citation cards.
-                cited = [s for s in sources if f"[{s['source_id']}]" in answer]
+                # 模型有时引用文本块编号（如 [D10-C01]），统一折算为来源编号，避免引用卡片丢失。
                 known = {s["source_id"] for s in sources}
-                answer = re.sub(r"\[((?:D|U|W)[A-Z0-9]+)\]", lambda m: m.group(0) if m.group(1) in known else "[来源未核验]", answer)
-                result = {"answer": answer, "route": "agent", "mode": "api", "model": c["model"], "citations": cited, "retrieval": sources, "trace": trace, "unknown": False}
+                answer = re.sub(r"\[((?:D|U|W)[A-Z0-9]+)(?:-C\d+)?\]", lambda m: f"[{m.group(1)}]" if m.group(1) in known else "[来源未核验]", answer)
+                cited = [s for s in sources if f"[{s['source_id']}]" in answer]
+                result = {"answer": answer, "route": "agent", "mode": "api", "model": c["model"], "citations": cited, "retrieval": sources, "trace": trace, "unknown": False, "retrieval_backend": index.backend}
             if event.is_set():
                 raise ProviderError("已停止生成。")
             # Source metadata is an application fact, never supplied by a model.
@@ -220,7 +274,7 @@ class Workbench:
             with self.lock:
                 self.active.pop((owner, identity), None)
 
-    def execute(self, name, args, schemas, retriever, web, config, question, sources, scope="simulation"):
+    def execute(self, name, args, schemas, index, web, config, question, sources, scope="simulation"):
         schema = next((s for s in schemas if s["name"] == name), None)
         if not schema or not isinstance(args, dict):
             return {"ok": False, "message": "未注册工具或无效参数 JSON。"}
@@ -234,11 +288,19 @@ class Workbench:
         if name == "handoff_to_human" and not handoff_requested(question):
             return {"ok": False, "message": "用户未明确要求转人工，不得创建工单，请先询问用户。"}
         if name == "search_knowledge":
-            found = [self.public_knowledge.enrich(r.to_dict(), scope) for r in retriever.search(args["query"], 5) if r.score >= settings.similarity_threshold]
+            note = SCOPES[scope]["notice"] + " 无结果请明确未知。"
+            try:
+                hits = index.retriever.search(args["query"], 5)
+            except ProviderError:
+                # 检索词的向量请求失败：本次改用同一批文本块的哈希检索，并告知模型。
+                index = self.lexical_index(index.retriever.chunks)
+                hits = index.retriever.search(args["query"], 5)
+                note = "语义检索暂不可用，本次为字面检索结果。" + note
+            found = [self.public_knowledge.enrich(r.to_dict(), scope) for r in hits if r.score >= index.threshold]
             for item in found:
                 if not any(s.get("chunk_id") == item["chunk_id"] for s in sources):
                     sources.append({"source_type": "knowledge", **item})
-            return {"ok": bool(found), "results": found, "note": SCOPES[scope]["notice"] + " 无结果请明确未知。"}
+            return {"ok": bool(found), "results": found, "retrieval_backend": index.backend, "note": note}
         if name == "search_web" and web:
             try:
                 found = search_web(args["query"], config["search_key"])

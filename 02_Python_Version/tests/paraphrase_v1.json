@@ -1,0 +1,25 @@
+{
+  "description": "口语改写与知识库外问题，用于对比哈希向量与云端语义向量，并校准 SEMANTIC_THRESHOLD。expected_source 为 null 表示知识库没有答案，应低于阈值被拒答。",
+  "paraphrase": [
+    {"id": "P01", "question": "图书馆礼拜天开吗", "expected_source": "D08"},
+    {"id": "P02", "question": "饭卡找不到了怎么办", "expected_source": "D10"},
+    {"id": "P03", "question": "几点之前必须回寝室", "expected_source": "D06"},
+    {"id": "P04", "question": "书拿回去能看多久", "expected_source": "D09"},
+    {"id": "P05", "question": "电脑上不了网", "expected_source": "D11"},
+    {"id": "P06", "question": "生病错过期末怎么办", "expected_source": "D03"},
+    {"id": "P07", "question": "家里出事了交不起学费", "expected_source": "D05"},
+    {"id": "P08", "question": "课不想上了能换吗", "expected_source": "D02"},
+    {"id": "P09", "question": "什么时候放寒假", "expected_source": "D01"},
+    {"id": "P10", "question": "成绩好能拿什么奖", "expected_source": "D04"},
+    {"id": "P11", "question": "寝室灯坏了找谁修", "expected_source": "D07"},
+    {"id": "P12", "question": "办事大厅周六上班吗", "expected_source": "D12"}
+  ],
+  "out_of_scope": [
+    {"id": "N01", "question": "学校游泳馆几点开放？", "expected_source": null},
+    {"id": "N02", "question": "食堂红烧肉多少钱？", "expected_source": null},
+    {"id": "N03", "question": "怎么申请出国交换项目？", "expected_source": null},
+    {"id": "N04", "question": "毕业论文查重率要求是多少？", "expected_source": null},
+    {"id": "N05", "question": "学校停车场怎么收费？", "expected_source": null},
+    {"id": "N06", "question": "考研复试一般什么时候？", "expected_source": null}
+  ]
+}

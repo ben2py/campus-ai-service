@@ -45,6 +45,39 @@ class Settings:
     memory_turns: int = int(os.getenv("MEMORY_TURNS", "6"))
 
 
+@dataclass(frozen=True)
+class EmbeddingSettings:
+    """API 模式的云端语义向量；未配置密钥时为 None，继续使用本地哈希向量。"""
+
+    api_key: str
+    base_url: str
+    model: str
+    dimension: int
+    batch_size: int
+    timeout_seconds: int
+    semantic_weight: float
+    threshold: float
+
+
+def embedding_settings() -> EmbeddingSettings | None:
+    key = os.getenv("EMBEDDING_API_KEY", "").strip()
+    base_url = os.getenv("EMBEDDING_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1").strip()
+    local = base_url.startswith(("http://127.0.0.1", "http://localhost", "http://[::1]"))
+    if not key and not local:
+        return None
+    return EmbeddingSettings(
+        api_key=key,
+        base_url=base_url,
+        model=os.getenv("EMBEDDING_MODEL", "text-embedding-v4").strip(),
+        dimension=int(os.getenv("EMBEDDING_API_DIMENSION", "1024")),
+        batch_size=int(os.getenv("EMBEDDING_BATCH_SIZE", "10")),
+        timeout_seconds=int(os.getenv("EMBEDDING_TIMEOUT_SECONDS", "20")),
+        semantic_weight=float(os.getenv("SEMANTIC_WEIGHT", "0.7")),
+        # 0.40 由 semantic_check 对 text-embedding-v4 校准：22 道正例最低 0.415，库外题 4/6 低于阈值。
+        threshold=float(os.getenv("SEMANTIC_THRESHOLD", "0.40")),
+    )
+
+
 settings = Settings()
 
 

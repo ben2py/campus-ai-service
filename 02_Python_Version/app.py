@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 from flask import Flask, Response, jsonify, request, send_from_directory, session, stream_with_context
 
 from src.agent.agent import CampusServiceAgent
-from src.config import settings
+from src.config import embedding_settings, settings
 from src.ingestion.chunker import chunk_documents
 from src.ingestion.loader import load_documents
 from src.llm.client import DeterministicGroundedClient, GroundedGenerator, OpenAICompatibleClient
@@ -60,7 +60,12 @@ def create_app(test_config=None) -> Flask:
                       SESSION_COOKIE_SAMESITE="Strict", WORKBENCH_DB=settings.project_root / "data" / "workbench.db")
     if test_config:
         app.config.update(test_config)
-    workbench = Workbench(app.config["WORKBENCH_DB"], app.config.get("TOOLS_DB"))
+    # 测试默认不读取 .env 中的 Embedding 密钥，避免单元测试发起真实云端请求。
+    if "EMBEDDING" in app.config:
+        embedding = app.config["EMBEDDING"]
+    else:
+        embedding = None if app.config.get("TESTING") else embedding_settings()
+    workbench = Workbench(app.config["WORKBENCH_DB"], app.config.get("TOOLS_DB"), embedding)
     server_config = workbench.store.config("__server__")
     if not server_config:
         server_config = {"session_secret": secrets.token_hex(32)}
@@ -117,7 +122,7 @@ def create_app(test_config=None) -> Flask:
     @app.get("/api/health")
     def health():
         c = workbench.config(session["owner"])
-        return jsonify({"ok": True, "mode": "api" if c["enabled"] else "offline", "model": c["model"] if c["enabled"] else "deterministic-grounded-v1", "version": "2.0", "documents": len(workbench.documents(session["owner"]))})
+        return jsonify({"ok": True, "mode": "api" if c["enabled"] else "offline", "model": c["model"] if c["enabled"] else "deterministic-grounded-v1", "version": "2.0", "documents": len(workbench.documents(session["owner"])), "retrieval": workbench.retrieval_backend(session["owner"])})
 
     @app.post("/api/chat")
     def chat():

@@ -87,9 +87,13 @@ class Workbench:
         saved = self.store.config(owner)
         if saved is None:
             saved = {"provider": "custom" if settings.llm_mode == "api" else "openai", "protocol": os.getenv("LLM_PROTOCOL", "openai") if settings.llm_mode == "api" else "responses", "base_url": settings.llm_base_url, "model": settings.llm_model, "enabled": settings.llm_mode == "api", "search_provider": "auto"}
-            keys = {"api_key": settings.llm_api_key or os.getenv("OPENAI_API_KEY", ""), "search_key": os.getenv("TAVILY_API_KEY", "")}
-            self.secrets.setdefault(owner, keys)
-        keys = self.secrets.get(owner, {})
+        if owner not in self.secrets:
+            # 密钥只在内存中；服务重启后用 .env 重新填充。
+            # 仅当已保存的接口地址与 .env 一致时才沿用 .env 的模型密钥，避免把它发给用户改过的其他地址。
+            same_host = saved.get("base_url", "").rstrip("/") == settings.llm_base_url.rstrip("/")
+            api_key = settings.llm_api_key or os.getenv("OPENAI_API_KEY", "")
+            self.secrets[owner] = {"api_key": api_key if same_host else "", "search_key": os.getenv("TAVILY_API_KEY", "")}
+        keys = self.secrets[owner]
         return {**saved, "api_key": keys.get("api_key", ""), "search_key": keys.get("search_key", "")}
 
     def public_config(self, owner):

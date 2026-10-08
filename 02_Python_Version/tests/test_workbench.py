@@ -107,6 +107,21 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(self.other.delete("/api/conversations/" + self.identity, json={}).status_code, 404)
         self.assertEqual(self.other.get("/api/conversations").json["items"], [])
 
+    def test_env_key_survives_restart_only_for_same_base_url(self):
+        from dataclasses import replace
+        from src.workbench import service
+        from src.workbench.service import Workbench
+
+        env = replace(service.settings, llm_base_url="https://env.example/v1", llm_api_key="env-key-not-a-secret")
+        db = Path(self.tmp.name) / "restart.db"
+        with patch.object(service, "settings", env):
+            first = Workbench(db, Path(self.tmp.name) / "tools.db")
+            first.set_config("same", config(base_url="https://env.example/v1", api_key=""))
+            first.set_config("other", config(base_url="https://other.example/v1", api_key="typed-key"))
+            restarted = Workbench(db, Path(self.tmp.name) / "tools.db")  # 新进程：内存中的密钥已清空
+            self.assertEqual(restarted.config("same")["api_key"], "env-key-not-a-secret")
+            self.assertEqual(restarted.config("other")["api_key"], "")
+
     def test_history_rename_delete(self):
         url = "/api/conversations/" + self.identity
         self.assertEqual(self.client.patch(url, json={"title": "图书馆"}).status_code, 200)

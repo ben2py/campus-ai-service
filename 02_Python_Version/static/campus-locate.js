@@ -57,6 +57,31 @@ function loadCalibration() {
   return null;
 }
 
+// 单次定位（供助手在用户问“我在哪/附近/怎么走”且尚未在地图中开启定位时使用）。
+// 沿用地图中保存的校准；失败、拒绝或超时返回 null，不打断提问。
+// 失败时 resolve({ error: "denied" | "timeout" | "unavailable" | "unsupported" })。
+export function locateOnce(meta, { timeout = 15000 } = {}) {
+  if (!("geolocation" in navigator) || !window.isSecureContext) return Promise.resolve({ error: "unsupported" });
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const cal = loadCalibration();
+        const [lat, lon] = cal?.mode === "gcj02" ? gcjToWgs(coords.latitude, coords.longitude) : [coords.latitude, coords.longitude];
+        const p = toMapXZ(meta, lat, lon);
+        if (cal?.mode === "offset") {
+          p.x += cal.dx;
+          p.z += cal.dz;
+        }
+        // 距校区约 25 km 以外：超出地图坐标范围，按“不在校区附近”处理。
+        if (!(Math.abs(p.x) < 500 && Math.abs(p.z) < 500)) return resolve({ error: "unavailable" });
+        resolve({ x: +p.x.toFixed(3), z: +p.z.toFixed(3), accuracy: Math.round(Math.min(coords.accuracy, 5000)), source: "gps" });
+      },
+      (e) => resolve({ error: e.code === 1 ? "denied" : e.code === 3 ? "timeout" : "unavailable" }),
+      { enableHighAccuracy: true, timeout, maximumAge: 120000 },
+    );
+  });
+}
+
 export function createLocator(meta, { onFix, onError }) {
   const unit = meta.unit_m;
   let watch = null,

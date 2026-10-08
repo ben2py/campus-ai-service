@@ -1,5 +1,5 @@
 import { layout, mapSource, loadCampusMap } from "./campus-layout.js";
-import { createRoutePlanner, targetChips, PLACE_POI } from "./campus-route.js";
+import { createRoutePlanner, targetChips, locationForQuestion, PLACE_POI } from "./campus-route.js";
 import { createLandmarkFilm } from "./landmark-film.js";
 const $ = (id) => document.getElementById(id);
 const paths = {
@@ -627,12 +627,17 @@ $("assistant-form").onsubmit = async (e) => {
       sessionId = c.id;
       localStorage.setItem("campus-current", sessionId);
     }
+    const located = await locationForQuestion(q, routes.currentLocation(), () => {
+      $("assistant-status").textContent = "正在获取你的位置（可在浏览器提示中允许或拒绝）…";
+    });
     const data = await api("/api/chat", {
       method: "POST",
       body: JSON.stringify({
         question: q,
         session_id: sessionId,
         web: $("assistant-web").checked,
+        location: located.location,
+        location_status: located.status,
       }),
     });
     const p = message(
@@ -655,7 +660,8 @@ $("assistant-form").onsubmit = async (e) => {
       p.append(source);
     }
     $("assistant-question").value = "";
-    $("assistant-status").textContent = "已完成。会话也可在完整工作台中查看。";
+    $("assistant-status").textContent =
+      (data.location_used ? "已结合你在地图中的位置回答。" : "") + "已完成。会话也可在完整工作台中查看。";
     document.dispatchEvent(new CustomEvent("campus-conversation-updated"));
   } catch (error) {
     $("assistant-status").textContent =

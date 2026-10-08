@@ -1,5 +1,5 @@
-import { insideCampus } from "./campus-layout.js";
-import { createLocator } from "./campus-locate.js";
+import { insideCampus, loadCampusMap } from "./campus-layout.js";
+import { createLocator, locateOnce } from "./campus-locate.js";
 
 // 路线规划面板 + 浏览器定位。路线由本机服务 /api/map/route 计算；定位只发送到本机服务。
 const $ = (id) => document.getElementById(id);
@@ -121,6 +121,7 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
       distance = Math.hypot(p.x, p.z) * map.meta.unit_m;
     const first = !fix;
     fix = { ...p, onCampus, distance };
+    shareLocation(currentLocation());
     const world = getWorld();
     // 校区 3 km 以外不在三维地图上绘制，避免把镜头拉到空白区域。
     if (distance < 3000) world?.setUser({ x: p.x, z: p.z, accuracy: p.accuracy });
@@ -152,6 +153,7 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
           ? "定位超时，请到开阔处重试，或在地图上点选起点。"
           : "暂时无法获取位置（设备未提供定位信息）。可在地图上点选起点。";
     stopWatch();
+    shareLocation(currentLocation());
     setLocateState("error", text);
     if (pending) {
       const resolve = pending;
@@ -188,6 +190,7 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
   function stopLocate() {
     stopWatch();
     fix = null;
+    shareLocation(currentLocation());
     getWorld()?.setUser(null);
     setLocateState("off", "");
   }
@@ -354,6 +357,7 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
     world.pick((p) => {
       $("route-pick").setAttribute("aria-pressed", "false");
       picked = { x: p.x, z: p.z, name: "地图选点" };
+      shareLocation(currentLocation());
       from.value = "pick";
       plan();
     });
@@ -398,7 +402,55 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
       status.textContent = "已取消点选。";
     }
   }, true);
-  return { open, close, plan, locate, get isOpen() { return !panel.hidden; } };
+  // 供助手读取的当前位置（地图坐标）：优先使用浏览器定位，其次是地图点选的起点。
+  function currentLocation() {
+    if (fix && locator?.running)
+      return { x: +fix.x.toFixed(3), z: +fix.z.toFixed(3), accuracy: Math.round(fix.accuracy), source: "gps" };
+    if (picked) return { x: +picked.x.toFixed(3), z: +picked.z.toFixed(3), source: "pick" };
+    return null;
+  }
+  return { open, close, plan, locate, currentLocation, get isOpen() { return !panel.hidden; } };
+}
+
+// 问题是否与“我的位置”有关（我在哪、附近、最近、怎么走、离我多远…）。
+const LOCATION_QUESTION = /我(?:现在)?(?:在哪|在什么地方|的位置)|附近|最近|离我|多远|远不远|怎么(?:去|走|过去)|带我去|导航|路线/;
+// 提问时取得位置：先用地图中已开启的定位/点选，没有且问题与位置有关时请求一次浏览器定位。
+// 返回 { location, status }：status 为定位失败原因，随问题发给助手以便给出对应建议。
+export async function locationForQuestion(question, current = null, onLocating = null) {
+  const known = current || sharedLocation();
+  if (known || !LOCATION_QUESTION.test(question.replace(/\s+/g, ""))) return { location: known, status: null };
+  onLocating?.();
+  try {
+    const map = await loadCampusMap();
+    const result = await locateOnce(map.meta);
+    if (result.error) return { location: null, status: result.error };
+    shareLocation(result);
+    return { location: result, status: null };
+  } catch {
+    return { location: null, status: "unavailable" };
+  }
+}
+
+// 地图页与工作台之间共享位置：只存在本标签页的 sessionStorage，10 分钟后失效。
+const LOCATION_KEY = "campus-location",
+  LOCATION_TTL = 10 * 60 * 1000;
+export function shareLocation(loc) {
+  try {
+    if (loc) sessionStorage.setItem(LOCATION_KEY, JSON.stringify({ ...loc, at: Date.now() }));
+    else sessionStorage.removeItem(LOCATION_KEY);
+  } catch {
+    /* 隐私模式等情况下不可用，忽略 */
+  }
+}
+export function sharedLocation() {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(LOCATION_KEY) || "null");
+    if (!v || Date.now() - v.at > LOCATION_TTL) return null;
+    const { at, ...loc } = v;
+    return loc;
+  } catch {
+    return null;
+  }
 }
 
 // 回答下方的“在地图中查看路线”入口。

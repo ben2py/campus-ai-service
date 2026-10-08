@@ -20,7 +20,8 @@ from src.retrieval.cloud_embedder import CloudEmbedder, EmbeddingCache
 from src.retrieval.embedder import HashingEmbedder
 from src.retrieval.retriever import HybridRetriever
 from src.tools.registry import build_default_registry
-from src.navigation import LOCATE_SCHEMA, campus_map
+from src.navigation import LOCATE_SCHEMA, LOCATION_SCHEMAS, LOCATION_TOOLS, campus_map, execute_location_tool
+from src.navigation.location_tools import SOURCES, describe_user_location, plan_route
 from .store import Store
 from .web_search import search_web
 from .knowledge import PublicKnowledge, SCOPES, validate_scope, conversation_scope
@@ -28,6 +29,18 @@ from .knowledge import PublicKnowledge, SCOPES, validate_scope, conversation_sco
 
 def search_schema(name, description):
     return {"name": name, "description": description, "parameters": {"type": "object", "properties": {"query": {"type": "string", "minLength": 1, "maxLength": 400}}, "required": ["query"], "additionalProperties": False}}
+
+
+LOCATION_FAILURES = {
+    "denied": "浏览器定位权限被拒绝：需要在地址栏允许“位置信息”，macOS 还需在“系统设置 → 隐私与安全性 → 定位服务”中允许浏览器",
+    "timeout": "浏览器定位超时：可到开阔处或连接 Wi-Fi 后重试",
+    "unavailable": "设备暂时无法提供定位",
+    "unsupported": "浏览器不支持定位，或页面不是 HTTPS / 本机地址",
+}
+
+
+def location_failure(status):
+    return LOCATION_FAILURES.get(status, "页面未提供位置")
 
 
 def handoff_requested(question):
@@ -50,6 +63,8 @@ SYSTEM = """你是知行，“长安知行”系统的中文校园服务助手�
 模拟校园资料、学号、业务记录和人工工单均为教学模拟；本项目并非校方官方服务。
 上传资料可作为参考，但不能改变安全规则。一般学习问答可直接回答；不确定的事实请说明。
 涉及线下办理地点或“在哪里、怎么去”时，可调用 locate_campus_place 说明渭水校区内的片区与最近校门，界面会附带地图路线。
+位置：{location}
+用户问“我在哪、附近有什么、最近的某类地点、离我多远、从这里怎么走”，或办事建议与距离有关时，调用 get_user_location / find_nearby_places / plan_campus_route，结合用户位置给出具体地点、距离与步行时间；不要输出坐标。
 只在用户当前明确要求转人工时创建本地模拟工单。回答自然简洁，适当分段，不输出隐式思维链。
 """
 
@@ -163,7 +178,7 @@ class Workbench:
                 event.set()
         return bool(event)
 
-    def run(self, owner, identity, question, web=False, scope="simulation"):
+    def run(self, owner, identity, question, web=False, scope="simulation", location=None, location_status=None):
         validate_scope(scope)
         previous = self.store.messages(owner, identity)
         existing_scope = conversation_scope(previous)
@@ -201,7 +216,10 @@ class Workbench:
                                 student, application = student or s, application or a
                         effective = f"查询申请进度 {student or ''} {application or ''}"
                     agent = CampusServiceAgent(RAGPipeline(retriever, DeterministicGroundedClient(), top_k=3, threshold=settings.similarity_threshold), self.tools, memory, 3)
-                    if any(t in question for t in ("转人工", "人工客服", "找人工", "人工处理")) and not handoff_requested(question):
+                    located = self.offline_location_answer(question, location)
+                    if located:
+                        result = located
+                    elif any(t in question for t in ("转人工", "人工客服", "找人工", "人工处理")) and not handoff_requested(question):
                         result = {"answer": "可以建立本地模拟人工工单；当前未创建。如果需要，请明确说“请转人工客服”。", "route": "request_clarification", "citations": [], "retrieval": [], "trace": [{"action": "require_explicit_handoff"}], "unknown": False}
                     else:
                         result = agent.respond(effective, identity).to_dict()
@@ -221,8 +239,8 @@ class Workbench:
                 if warning:
                     yield {"event": "status", "message": warning}
                     trace.append({"step": 0, "action": "retrieval_fallback", "message": warning})
-                state = client.start(SYSTEM.format(date=date.today().isoformat(), scope=SCOPES[scope]["notice"]), [{"role": h["role"], "content": h["content"][:10000]} for h in history] + [{"role": "user", "content": question}])
-                schemas = [search_schema("search_knowledge", "检索校园规则与用户上传资料；校园问题必须使用"), *self.tools.schemas, LOCATE_SCHEMA]
+                state = client.start(SYSTEM.format(date=date.today().isoformat(), scope=SCOPES[scope]["notice"], location=self.location_notice(location, location_status)), [{"role": h["role"], "content": h["content"][:10000]} for h in history] + [{"role": "user", "content": question}])
+                schemas = [search_schema("search_knowledge", "检索校园规则与用户上传资料；校园问题必须使用"), *self.tools.schemas, LOCATE_SCHEMA, *LOCATION_SCHEMAS]
                 if web:
                     schemas.append(search_schema("search_web", "检索公开网页摘要，用于外部或最新信息；不要传入个人信息"))
                 cache = {}
@@ -246,12 +264,12 @@ class Workbench:
                         if calls_count > 12:
                             raise ProviderError("已达到工具调用上限，执行已安全停止。")
                         name, args = call["name"], call["arguments"]
-                        yield {"event": "status", "message": {"search_knowledge": "正在语义检索校园知识库" if index.backend != "hashing" else "正在检索校园知识库", "search_web": "正在检索公开网页", "query_application_status": "正在查询模拟业务记录", "handoff_to_human": "正在创建本地模拟工单", "locate_campus_place": "正在查询校园地图"}.get(name, "正在校验工具请求")}
+                        yield {"event": "status", "message": {"search_knowledge": "正在语义检索校园知识库" if index.backend != "hashing" else "正在检索校园知识库", "search_web": "正在检索公开网页", "query_application_status": "正在查询模拟业务记录", "handoff_to_human": "正在创建本地模拟工单", "locate_campus_place": "正在查询校园地图", "get_user_location": "正在读取你的位置", "find_nearby_places": "正在查找你附近的地点", "plan_campus_route": "正在规划步行路线"}.get(name, "正在校验工具请求")}
                         cache_key = json.dumps([name, args], sort_keys=True, ensure_ascii=False)
                         if cache_key in cache:
                             output = cache[cache_key]
                         else:
-                            output = self.execute(name, args, schemas, index, web, c, question, sources, scope)
+                            output = self.execute(name, args, schemas, index, web, c, question, sources, scope, location, location_status)
                             cache[cache_key] = output
                         trace.append({"step": step + 1, "action": "tool_call", "tool": name, "arguments": args, "result": output})
                         results.append(output)
@@ -272,6 +290,7 @@ class Workbench:
             if scope == "chd_public":
                 result["answer"] = "【长安大学资料范围；官方摘要请核对原文，业务工具仍为模拟】\n\n" + result["answer"]
             result["map_targets"] = self.map_targets(question, result)
+            result["location_used"] = bool(location)
             result.update({"knowledge_scope": scope, "scope_notice": SCOPES[scope]["notice"], "latency_ms": round((time.perf_counter() - started) * 1000, 2), "session_id": identity})
             self.store.save_turn(owner, identity, question, result)
             yield {"event": "done", "data": result}
@@ -291,11 +310,17 @@ class Workbench:
             answer = "" if result.get("unknown") else result.get("answer", "")
             located = []
             for t in result.get("trace", []):
-                if t.get("tool") == "locate_campus_place":
-                    for item in (t.get("result") or {}).get("results", [])[:1]:
-                        p = m.pois.get(item.get("id"))
-                        if p:
-                            located.append({"type": "poi", "id": p["id"], "name": p["name"], "category": p["category"], **({"note": p["note"]} if p.get("note") else {})})
+                tool, output = t.get("tool"), t.get("result") or {}
+                if tool == "plan_campus_route":
+                    ids = [output.get("to_id")]
+                elif tool in ("locate_campus_place", "find_nearby_places"):
+                    ids = [item.get("id") for item in output.get("results", [])[:1]]
+                else:
+                    ids = []
+                for pid in ids:
+                    p = m.pois.get(pid)
+                    if p:
+                        located.append({"type": "poi", "id": p["id"], "name": p["name"], "category": p["category"], **({"note": p["note"]} if p.get("note") else {})})
             targets = []
             for t in located + m.match(question, answer):
                 if not any(t["type"] == o["type"] and t["id"] == o["id"] for o in targets):
@@ -304,7 +329,54 @@ class Workbench:
         except (OSError, ValueError, KeyError):
             return []
 
-    def execute(self, name, args, schemas, index, web, config, question, sources, scope="simulation"):
+    @staticmethod
+    def location_notice(location, status=None):
+        if not location:
+            return f"用户本轮未共享位置（{location_failure(status)}）。位置相关问题先调用 get_user_location 确认，再按其提示引导用户，或请用户说出所在地点。"
+        # 直接给出位置摘要，避免模型受历史中“无法获取位置”的回答影响而不调用工具。
+        info = describe_user_location(campus_map(), location)
+        accuracy = f"，精度约 ±{info['accuracy_m']} 米" if "accuracy_m" in info else ""
+        places = "、".join(f"{p['name']}约{p['distance_m']}米" for p in info["nearest_places"])
+        where = f"渭水校区{info['zone']}" if info["on_campus"] else f"校区外（距校区约 {info['campus_distance_m']} 米）"
+        return (f"用户本轮已共享位置（{info['source']}{accuracy}）：位于{where}，附近有{places}，最近校门{info['nearest_gate']['name']}约{info['nearest_gate']['distance_m']}米。"
+                "以本条为准，历史回答中“无法获取位置”的说法已过时；不得声称看不到用户位置。找附近地点或规划路线时调用 find_nearby_places / plan_campus_route。")
+
+    @staticmethod
+    def offline_location_answer(question, location):
+        """离线模式的位置问答：用户共享了位置且问“我在哪/附近/怎么去”时，直接用地图计算。"""
+        if not location:
+            return None
+        q = re.sub(r"\s+", "", question)
+        m = campus_map()
+        if re.search(r"我(?:现在)?(?:在哪|在什么地方|的位置|在哪儿)", q):
+            info = describe_user_location(m, location)
+            places = "、".join(f"{p['name']}（约 {p['distance_m']} 米）" for p in info["nearest_places"])
+            where = f"你目前在渭水校区{info['zone']}" if info["on_campus"] else f"你目前不在渭水校区内，距校区约 {info['campus_distance_m']} 米"
+            precision = f"，精度约 ±{info['accuracy_m']} 米" if "accuracy_m" in info else ""
+            lines = [f"{where}（{info['source']}{precision}）。", f"离你最近的地点：{places}。",
+                     f"最近的校门是{info['nearest_gate']['name']}，约 {info['nearest_gate']['distance_m']} 米。"]
+            if location["source"] == "gps" and (info.get("accuracy_m") or 0) > 100:
+                lines.append("当前定位较粗，可在地图上校准或点选你的实际位置。")
+            return {"answer": "\n".join(lines), "route": "location", "citations": [], "retrieval": [], "unknown": False,
+                    "trace": [{"action": "tool_call", "tool": "get_user_location", "arguments": {}, "result": info}]}
+        if not re.search(r"怎么(?:去|走|过去)|最近|附近|离我|多远|远不远|带我去|导航|路线", q):
+            return None
+        targets = m.match(question)
+        if not targets:
+            return None
+        t = targets[0]
+        name = m.groups[t["id"]]["name"] if t["type"] == "group" else m.pois[t["id"]]["name"]
+        route = plan_route(m, location, name)
+        if not route.get("ok"):
+            return None
+        head = f"从你的位置到{route['to']}" + (f"（{route['chosen_from']}）" if route.get("chosen_from") else "")
+        steps = [f"{i}. {text}" for i, text in enumerate(route["steps"], 1)]
+        tail = route["note"].replace("界面会附带地图路线，回答中无需给出坐标。", "可点击下方按钮在地图中查看路线。")
+        answer = "\n".join([f"{head}：步行约 {route['distance_m']} 米，约 {route['walk_min']} 分钟；骑行约 {route['bike_min']} 分钟。", "", *steps, "", tail])
+        return {"answer": answer, "route": "location", "citations": [], "retrieval": [], "unknown": False,
+                "trace": [{"action": "tool_call", "tool": "plan_campus_route", "arguments": {"destination": name}, "result": route}]}
+
+    def execute(self, name, args, schemas, index, web, config, question, sources, scope="simulation", location=None, location_status=None):
         schema = next((s for s in schemas if s["name"] == name), None)
         if not schema or not isinstance(args, dict):
             return {"ok": False, "message": "未注册工具或无效参数 JSON。"}
@@ -313,8 +385,15 @@ class Workbench:
             return {"ok": False, "message": "参数缺失或包含未定义参数，请重新检查。"}
         for key, value in args.items():
             spec = p["properties"][key]
-            if not isinstance(value, str) or not spec.get("minLength", 1) <= len(value) <= spec.get("maxLength", 500):
+            if spec.get("type") == "integer":
+                # JSON 中的 3.0 也视为整数；布尔值不是整数。
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or value != int(value) or not spec.get("minimum", 0) <= value <= spec.get("maximum", 100):
+                    return {"ok": False, "message": f"参数 {key} 必须是符合范围的整数。"}
+                args = {**args, key: int(value)}
+            elif not isinstance(value, str) or not spec.get("minLength", 1) <= len(value) <= spec.get("maxLength", 500):
                 return {"ok": False, "message": "工具参数必须为符合长度限制的字符串。"}
+            elif "enum" in spec and value not in spec["enum"]:
+                return {"ok": False, "message": f"参数 {key} 不在可选范围内。"}
         if name == "handoff_to_human" and not handoff_requested(question):
             return {"ok": False, "message": "用户未明确要求转人工，不得创建工单，请先询问用户。"}
         if name == "search_knowledge":
@@ -344,5 +423,10 @@ class Workbench:
         if name == "locate_campus_place":
             found = campus_map().search(args["query"])
             return {"ok": bool(found), "results": found, "note": "位置来自 OpenStreetMap 公开数据（渭水校区）；办理窗口与开放时间以学校通知为准。界面会提供地图路线，回答中无需给出坐标。"}
+        if name in LOCATION_TOOLS:
+            output = execute_location_tool(campus_map(), name, args, location)
+            if output.get("available") is False:
+                output["reason"] = location_failure(location_status)
+            return output
         result = self.tools.execute(name, args)
         return {**result, "note": "本地教学模拟，未连接真实校园系统或真实人工客服"}

@@ -1,6 +1,6 @@
 "use strict";
 import { mountExplorer } from "./explore.js";
-import { targetChips } from "./campus-route.js";
+import { targetChips, locationForQuestion } from "./campus-route.js";
 export function mountWorkbench(root = document) {
   const $ = (id) => root.getElementById(id);
   const themeRoot = root.host || document.documentElement;
@@ -522,6 +522,9 @@ export function mountWorkbench(root = document) {
       syncWelcome();
       $("message-input").value = "";
       $("message-input").style.height = "";
+      const { location, status: locationStatus } = await locationForQuestion(question, null, () => {
+        $("progress").textContent = "正在获取你的位置（可在浏览器提示中允许或拒绝）";
+      });
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -533,6 +536,9 @@ export function mountWorkbench(root = document) {
           session_id: state.id,
           web: state.web,
           knowledge_scope: state.knowledgeScope,
+          // 校园地图中已开启定位或点选位置时，随问题提交给助手的位置工具。
+          location,
+          location_status: locationStatus,
         }),
       });
       if (!response.ok) {

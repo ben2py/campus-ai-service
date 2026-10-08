@@ -20,10 +20,10 @@ from src.rag.pipeline import RAGPipeline
 from src.retrieval.embedder import HashingEmbedder
 from src.retrieval.retriever import HybridRetriever
 from src.tools.registry import build_default_registry
-from src.workbench.service import Workbench
+from src.workbench.service import LOCATION_FAILURES, Workbench
 from src.workbench.knowledge import SCOPES, validate_scope, conversation_scope
 from src.llm.providers import ModelClient, ProviderError
-from src.navigation import RouteError, campus_map
+from src.navigation import RouteError, campus_map, parse_user_location
 
 
 def build_generator() -> GroundedGenerator:
@@ -143,7 +143,11 @@ def create_app(test_config=None) -> Flask:
         scope = validate_scope(data.get("knowledge_scope", "simulation"))
         if conversation_scope(history) not in (None, scope):
             raise ValueError("切换资料范围需要开启新对话，已有会话仍保留在历史记录中。")
-        events = workbench.run(owner, identity, question.strip(), data.get("web") is True, scope)
+        # 用户在校园地图中共享的位置：只用于本轮工具计算，不写入日志；回答与记录中只保留片区和距离。
+        location = parse_user_location(data.get("location"))
+        # 前端定位失败的原因（权限、超时等），让助手给出对应的处理建议。
+        location_status = data.get("location_status") if data.get("location_status") in LOCATION_FAILURES else None
+        events = workbench.run(owner, identity, question.strip(), data.get("web") is True, scope, location, location_status)
         if "text/event-stream" in request.headers.get("Accept", ""):
             @stream_with_context
             def stream():

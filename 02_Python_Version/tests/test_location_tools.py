@@ -133,6 +133,11 @@ class LocationChatTests(unittest.TestCase):
         self.assertIn("权限被拒绝", json.dumps(http.call_args_list[0], ensure_ascii=False))
         self.assertIn("权限被拒绝", response.json["trace"][0]["result"]["reason"])
 
+    def test_scope_banner_not_duplicated(self):
+        from src.workbench.service import CHD_BANNER, strip_banner
+        self.assertEqual(strip_banner(f"{CHD_BANNER}\n\n{CHD_BANNER}\n回答"), "回答")
+        self.assertEqual(strip_banner("回答"), "回答")
+
     def test_model_tool_rejects_bad_integer(self):
         wb = self.app.extensions["workbench"]
         from src.navigation import LOCATION_SCHEMAS

@@ -43,6 +43,16 @@ def location_failure(status):
     return LOCATION_FAILURES.get(status, "页面未提供位置")
 
 
+CHD_BANNER = "【长安大学资料范围；官方摘要请核对原文，业务工具仍为模拟】"
+
+
+def strip_banner(text):
+    """去掉回答开头由应用添加的资料范围提示（可能重复多次）。"""
+    while text.lstrip().startswith(CHD_BANNER):
+        text = text.lstrip()[len(CHD_BANNER):]
+    return text.lstrip()
+
+
 def handoff_requested(question):
     terms = ("转人工", "人工客服", "找人工", "人工处理")
     if not any(t in question for t in terms):
@@ -239,7 +249,7 @@ class Workbench:
                 if warning:
                     yield {"event": "status", "message": warning}
                     trace.append({"step": 0, "action": "retrieval_fallback", "message": warning})
-                state = client.start(SYSTEM.format(date=date.today().isoformat(), scope=SCOPES[scope]["notice"], location=self.location_notice(location, location_status)), [{"role": h["role"], "content": h["content"][:10000]} for h in history] + [{"role": "user", "content": question}])
+                state = client.start(SYSTEM.format(date=date.today().isoformat(), scope=SCOPES[scope]["notice"], location=self.location_notice(location, location_status)), [{"role": h["role"], "content": strip_banner(h["content"])[:10000]} for h in history] + [{"role": "user", "content": question}])
                 schemas = [search_schema("search_knowledge", "检索校园规则与用户上传资料；校园问题必须使用"), *self.tools.schemas, LOCATE_SCHEMA, *LOCATION_SCHEMAS]
                 if web:
                     schemas.append(search_schema("search_web", "检索公开网页摘要，用于外部或最新信息；不要传入个人信息"))
@@ -288,7 +298,8 @@ class Workbench:
             for field in ("citations", "retrieval"):
                 result[field] = [self.public_knowledge.enrich(s, scope) if s.get("source_type") != "web" else s for s in result.get(field, [])]
             if scope == "chd_public":
-                result["answer"] = "【长安大学资料范围；官方摘要请核对原文，业务工具仍为模拟】\n\n" + result["answer"]
+                # 模型可能模仿历史回答自带提示，先去掉再统一加一次。
+                result["answer"] = CHD_BANNER + "\n\n" + strip_banner(result["answer"])
             result["map_targets"] = self.map_targets(question, result)
             result["location_used"] = bool(location)
             result.update({"knowledge_scope": scope, "scope_notice": SCOPES[scope]["notice"], "latency_ms": round((time.perf_counter() - started) * 1000, 2), "session_id": identity})

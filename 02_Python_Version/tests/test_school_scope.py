@@ -20,7 +20,7 @@ class SchoolScopeTests(unittest.TestCase):
 
     def test_official_documents_are_chd_with_source_metadata(self):
         data = self.client.get("/api/knowledge?scope=chd_public").json
-        self.assertEqual(len(data["items"]), 6)
+        self.assertEqual(len(data["items"]), 37)
         for doc in data["items"]:
             self.assertEqual(doc["school"], "长安大学")
             self.assertTrue(urlparse(doc["url"]).hostname.endswith(".chd.edu.cn"))

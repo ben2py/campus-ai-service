@@ -5,3 +5,5 @@ __pycache__/
 *.db
 logs/*.log
 .DS_Store
+# 爬虫的原文抽取：含官网全文，仅本地核对使用，不提交
+data/public_corpus/chd_raw/

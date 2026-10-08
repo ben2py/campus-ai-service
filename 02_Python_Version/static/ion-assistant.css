@@ -13,6 +13,8 @@
   color: var(--ion-text);
   --bg: #071522;
   --paper: #102637;
+  /* 代码块等使用 --sidebar 作底色；对话区为深色，必须一并覆盖，否则浅色主题下会出现浅底浅字。 */
+  --sidebar: #0b1d2c;
   --ink: #e7f5ff;
   --muted: #a1bfd3;
   --accent: #92e3ff;

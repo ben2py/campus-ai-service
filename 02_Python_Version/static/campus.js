@@ -1,4 +1,5 @@
-import { layout, mapSource } from "./campus-layout.js";
+import { layout, mapSource, loadCampusMap } from "./campus-layout.js";
+import { createRoutePlanner, targetChips, PLACE_POI } from "./campus-route.js";
 import { createLandmarkFilm } from "./landmark-film.js";
 const $ = (id) => document.getElementById(id);
 const paths = {
@@ -23,6 +24,10 @@ const paths = {
   activity: "M3 21V8l9-5 9 5v13H3Zm5-11v7m4-7v7m4-7v7",
   market: "M3 10V5h18v5M3 10l2 3 4-3 3 3 3-3 4 3 2-3M5 13v8h14v-8M9 21v-5h6v5",
   transit: "M5 17V5c0-3 14-3 14 0v12H5Zm0-8h14M8 17v3m8-3v3M7 13h2m6 0h2",
+  locate: "M12 2v3m0 14v3M2 12h3m14 0h3M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0ZM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0",
+  route: "M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM8 17h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7",
+  swap: "M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3",
+  crosshair: "M12 3v4m0 10v4M3 12h4m10 0h4M12 12h.01M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0",
 };
 function icon(name) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]}"/></svg>`;
@@ -113,7 +118,43 @@ let documents = [],
   paused = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let opener = null,
   sessionId = null,
-  busy = false;
+  busy = false,
+  campusMap = null;
+const routes = createRoutePlanner({
+  getWorld: () => world,
+  getMap: () => campusMap,
+  reveal: () => {
+    if (selected) closePlace(true);
+    enterCampus(false);
+    $("campus").scrollIntoView({ block: "start", behavior: "instant" });
+  },
+});
+function routeFromChat(target) {
+  // 助手面板与路线面板同在右侧，先收起助手（对话保留，可随时再打开）。
+  if (!$("assistant-panel").hidden) closeAssistant();
+  if (!routes.open(target))
+    $("assistant-status").textContent = "地图数据仍在加载，请稍后再试。";
+}
+function openRouteFromURL() {
+  const id = new URLSearchParams(location.search).get("route");
+  if (!id || !/^(?:(?:poi|group):)?[\w-]{1,40}$/.test(id)) return;
+  const [type, key] = id.includes(":") ? id.split(":") : ["poi", id];
+  history.replaceState(history.state, "", location.pathname + location.hash);
+  routes.open(type === "group" ? { group: key } : { poi: key });
+}
+document.addEventListener("campus-route", (e) => routeFromChat(e.detail));
+function poiFilter() {
+  return [...document.querySelectorAll("#poi-filters [aria-pressed=true]")].flatMap(
+    (b) => (b.dataset.cat === "gate" ? ["gate", "transit"] : b.dataset.cat === "life" ? ["life", "activity"] : [b.dataset.cat]),
+  );
+}
+document.querySelectorAll("#poi-filters button").forEach((b) => {
+  b.onclick = () => {
+    b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+    enterCampus(false);
+    world?.setPoiFilter(poiFilter());
+  };
+});
 async function api(path, options = {}) {
   const r = await fetch(path, {
     ...options,
@@ -172,6 +213,7 @@ function placeDocs() {
 let mapReturn = null;
 function choosePlace(key, focus = true, anchor = null) {
   if (!places[key]) return;
+  if (routes.isOpen) routes.close();
   enterCampus(false);
   if ($("campus-directory").open) $("campus-directory").close();
   if (!selected) mapReturn = world?.snapshot();
@@ -185,7 +227,9 @@ function choosePlace(key, focus = true, anchor = null) {
     : key === "life"
       ? "多片区生活社区 · 渭水校区"
       : p.mapName + " · 渭水校区";
-  $("place-description").textContent = p.description;
+  $("place-description").textContent =
+    p.description + (p.mapNote ? "（位置说明：" + p.mapNote + "）" : "");
+  $("place-route").hidden = !PLACE_POI[key];
   const photo = placePhotos[key];
   $("place-photo").hidden = !photo;
   if (photo) {
@@ -247,6 +291,10 @@ document.querySelectorAll("[data-place]").forEach((b) => {
   b.onclick = () => choosePlace(b.dataset.place);
 });
 $("close-place").onclick = () => closePlace();
+$("place-route").onclick = () => {
+  const poi = PLACE_POI[selected];
+  if (poi) routes.open({ poi });
+};
 $("landmark-back").onclick = () => closePlace();
 // A chapter is a real camera composition plus a bounded service directory.
 const chapters = {
@@ -393,7 +441,7 @@ function chooseChapter(key, keepPhoto = false) {
     ),
   );
   const note = document.createElement("span");
-  note.textContent = "据 2023 版校图整理 · 非测绘导航";
+  note.textContent = "OpenStreetMap 路网 · 步行导航仅供参考";
   $("scene-hint").append(note);
   $("chapter-status").textContent =
     `已切换${document.querySelector(`button[data-chapter="${key}"] span`).textContent}，${chapter.places.length}个服务地点`;
@@ -549,6 +597,7 @@ document.addEventListener("keydown", (e) => {
   if ($("campus-directory").open) return;
   if (e.key === "Escape") {
     if (!$("assistant-panel").hidden) closeAssistant();
+    else if (routes.isOpen) routes.close();
     else if (selected) closePlace();
     else if (!$("map-results").hidden) $("map-results").hidden = true;
     else if ($("campus").classList.contains("map-expanded")) toggleMap();
@@ -590,6 +639,7 @@ $("assistant-form").onsubmit = async (e) => {
       data.answer || "未收到回答，请在完整工作台中重试。",
       "assistant",
     );
+    if (data.map_targets?.length) p.append(targetChips(data.map_targets, routeFromChat));
     for (const c of data.citations || []) {
       const source = document.createElement("span");
       source.className = "answer-source";
@@ -655,6 +705,8 @@ document.addEventListener("campus-mode", async (e) => {
       message("你好，今天想了解校园里的哪件事？", "assistant", false);
     for (const item of conversation?.messages || []) {
       const entry = message(item.content, item.role, false);
+      if (item.data?.map_targets?.length)
+        entry.append(targetChips(item.data.map_targets, routeFromChat));
       for (const citation of item.data?.citations || []) {
         const source = document.createElement("span");
         source.className = "answer-source";
@@ -725,19 +777,48 @@ $("map-query").oninput = () => {
     return;
   }
   const matches = Object.entries(places).filter(([key, place]) =>
-    (place.name + mapAliases[key]).toLowerCase().includes(q),
+    (place.name + (place.mapName || "") + mapAliases[key]).toLowerCase().includes(q),
   );
-  $("map-search-status").textContent = `找到 ${matches.length} 个服务地点`;
-  if (!matches.length) {
+  // 设施与已命名建筑（OSM）：名称或关键词命中，最多 6 条。
+  const pois = (campusMap?.pois || [])
+    .filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.keywords.some((k) => k.includes(q) || (q.length > 1 && q.includes(k))),
+    )
+    .slice(0, 6);
+  $("map-search-status").textContent =
+    `找到 ${matches.length} 个服务地点、${pois.length} 处设施`;
+  if (!matches.length && !pois.length) {
     const p = document.createElement("p");
     p.textContent =
-      "未找到实景地标。试试“图书馆”“修远”或“鸿翔园”；其他问题可直接进入 Agent 工作台。";
+      "未找到地点。试试“图书馆”“卡务中心”“快递”或楼名；其他问题可直接进入 Agent 工作台。";
     results.append(p);
   }
   for (const [key, place] of matches) {
     const button = document.createElement("button");
     button.textContent = place.name + " · 定位并查看服务";
     button.onclick = () => choosePlace(key);
+    results.append(button);
+  }
+  // 同类设施（餐厅、驿站等）先给出“最近的一处”。
+  for (const [key, group] of Object.entries(campusMap?.groups || {})) {
+    if (!group.keywords.some((k) => k.includes(q) || (q.length > 1 && q.includes(k)))) continue;
+    const button = document.createElement("button");
+    button.textContent = group.name + " · 按步行距离推荐";
+    button.onclick = () => {
+      results.hidden = true;
+      routes.open({ group: key });
+    };
+    results.prepend(button);
+  }
+  for (const poi of pois) {
+    const button = document.createElement("button");
+    button.textContent = poi.name + " · 规划步行路线";
+    button.onclick = () => {
+      results.hidden = true;
+      routes.open({ poi: poi.id });
+    };
     results.append(button);
   }
 };
@@ -798,9 +879,24 @@ api("/api/health")
   .catch(
     () => ($("model-status").textContent = "服务暂不可用，请检查本地服务"),
   );
-import("./campus-world.js")
-  .then(async (module) => {
-    world = await module.createWorld(places, choosePlace);
+const mapReady = loadCampusMap().then((map) => {
+  campusMap = map;
+  for (const [key, p] of Object.entries(map.places))
+    if (places[key])
+      Object.assign(places[key], { position: [p.x, 0, p.z], mapNote: p.note });
+  return map;
+});
+Promise.all([import("./campus-world.js"), mapReady])
+  .then(async ([module, map]) => {
+    world = await module.createWorld(places, choosePlace, map, {
+      onPoi: (id) => routes.open({ poi: id }),
+      onBuilding: (info) => {
+        const poi = map.pois.find((p) => p.name === info.name);
+        if (poi) routes.open({ poi: poi.id });
+        else if (info.name) routes.open({ x: info.x, z: info.z, name: info.name });
+      },
+    });
+    world.setPoiFilter(poiFilter());
     world.pause(paused);
     world.night(document.body.classList.contains("night"));
     world.view($("map-view").getAttribute("aria-pressed") === "true");
@@ -809,6 +905,7 @@ import("./campus-world.js")
     world.active($("campus").classList.contains("has-entered"));
     $("scene-fallback").hidden = true;
     document.body.dataset.scene = "ready";
+    openRouteFromURL();
   })
   .catch((error) => {
     console.warn("3D scene unavailable:", error.message);
@@ -820,4 +917,9 @@ import("./campus-world.js")
     document
       .querySelectorAll(".scene-tools button")
       .forEach((b) => (b.disabled = true));
+    // 没有三维场景时，路线面板仍可给出文字分步指引。
+    mapReady.then(openRouteFromURL).catch(() => {
+      $("map-route-toggle").disabled = true;
+      $("map-locate").disabled = true;
+    });
   });

@@ -1,0 +1,511 @@
+{
+"source": "OpenStreetMap POI points via Photon reverse geocoding (komoot)",
+"license": "ODbL 1.0 - (c) OpenStreetMap contributors",
+"retrieved_at": "2026-10-08",
+"points": [
+{
+"osm_id": 11083682401,
+"name": "7-Eleven",
+"key": "shop",
+"value": "convenience",
+"lon": 108.903358,
+"lat": 34.375709
+},
+{
+"osm_id": 11402910943,
+"name": "东区京东物流",
+"key": "amenity",
+"value": "post_office",
+"lon": 108.904788,
+"lat": 34.375079
+},
+{
+"osm_id": 1194050474,
+"name": "东区排球场",
+"key": "leisure",
+"value": "pitch",
+"lon": 108.904602,
+"lat": 34.376018
+},
+{
+"osm_id": 11134151644,
+"name": "东区浴室",
+"key": "amenity",
+"value": "public_bath",
+"lon": 108.903852,
+"lat": 34.37585
+},
+{
+"osm_id": 11402910941,
+"name": "东区菜鸟驿站",
+"key": "amenity",
+"value": "post_office",
+"lon": 108.904668,
+"lat": 34.375033
+},
+{
+"osm_id": 11402910942,
+"name": "东区顺丰速运",
+"key": "amenity",
+"value": "post_office",
+"lon": 108.904813,
+"lat": 34.375008
+},
+{
+"osm_id": 1194022846,
+"name": "乾健体育馆",
+"key": "leisure",
+"value": "sports_hall",
+"lon": 108.889441,
+"lat": 34.367323
+},
+{
+"osm_id": 1194022847,
+"name": "乾健游泳馆",
+"key": "leisure",
+"value": "sports_centre",
+"lon": 108.890201,
+"lat": 34.367483
+},
+{
+"osm_id": 255892814,
+"name": "交通馆",
+"key": "tourism",
+"value": "museum",
+"lon": 108.907545,
+"lat": 34.373089
+},
+{
+"osm_id": 1209037161,
+"name": "副看台",
+"key": "leisure",
+"value": "bleachers",
+"lon": 108.907143,
+"lat": 34.376249
+},
+{
+"osm_id": 11211275007,
+"name": "卡务中心",
+"key": "office",
+"value": "yes",
+"lon": 108.903643,
+"lat": 34.373822
+},
+{
+"osm_id": 255695908,
+"name": "大学生活动中心",
+"key": "amenity",
+"value": "community_centre",
+"lon": 108.905712,
+"lat": 34.373841
+},
+{
+"osm_id": 11143986080,
+"name": "天猫超市",
+"key": "shop",
+"value": "convenience",
+"lon": 108.902903,
+"lat": 34.376173
+},
+{
+"osm_id": 1194022842,
+"name": "天行健餐厅",
+"key": "amenity",
+"value": "restaurant",
+"lon": 108.902365,
+"lat": 34.376408
+},
+{
+"osm_id": 9035437036,
+"name": "尚稷路草滩三路口",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.891848,
+"lat": 34.378297
+},
+{
+"osm_id": 9035437035,
+"name": "尚稷路草滩三路口",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.89445,
+"lat": 34.37891
+},
+{
+"osm_id": 9035437058,
+"name": "尚稷路草滩五路口",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.886685,
+"lat": 34.37671
+},
+{
+"osm_id": 9035437050,
+"name": "尚稷路草滩四路口",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.887628,
+"lat": 34.377143
+},
+{
+"osm_id": 9035437049,
+"name": "尚稷路草滩四路口",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.890533,
+"lat": 34.377757
+},
+{
+"osm_id": 9038164905,
+"name": "尚苑路松速物流",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.886315,
+"lat": 34.372268
+},
+{
+"osm_id": 11269620540,
+"name": "尚苑路草滩一路口",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.90662,
+"lat": 34.377932
+},
+{
+"osm_id": 11269620541,
+"name": "尚苑路草滩一路口",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.908223,
+"lat": 34.378153
+},
+{
+"osm_id": 9038164894,
+"name": "尚苑路草滩四路口",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.891457,
+"lat": 34.373596
+},
+{
+"osm_id": 9038164881,
+"name": "尚苑路长安大学渭水校区",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.901272,
+"lat": 34.376573
+},
+{
+"osm_id": 9038164863,
+"name": "尚苑路长安大学渭水校区",
+"key": "highway",
+"value": "bus_stop",
+"lon": 108.903554,
+"lat": 34.377104
+},
+{
+"osm_id": 393548970,
+"name": "建筑馆",
+"key": "tourism",
+"value": "museum",
+"lon": 108.907257,
+"lat": 34.372558
+},
+{
+"osm_id": 1194050479,
+"name": "攀岩场地",
+"key": "leisure",
+"value": "sports_centre",
+"lon": 108.907956,
+"lat": 34.374158
+},
+{
+"osm_id": 11211275009,
+"name": "明远创客咖啡",
+"key": "amenity",
+"value": "cafe",
+"lon": 108.898968,
+"lat": 34.370793
+},
+{
+"osm_id": 255695904,
+"name": "朝晖体育场",
+"key": "leisure",
+"value": "stadium",
+"lon": 108.906386,
+"lat": 34.376077
+},
+{
+"osm_id": 1202005706,
+"name": "树蕙园广场",
+"key": "place",
+"value": "square",
+"lon": 108.905131,
+"lat": 34.373287
+},
+{
+"osm_id": 255695909,
+"name": "树蕙园餐厅",
+"key": "amenity",
+"value": "restaurant",
+"lon": 108.904874,
+"lat": 34.373909
+},
+{
+"osm_id": 11173204320,
+"name": "泰熙家",
+"key": "amenity",
+"value": "restaurant",
+"lon": 108.887523,
+"lat": 34.36913
+},
+{
+"osm_id": 1202005712,
+"name": "滋兰苑广场",
+"key": "place",
+"value": "square",
+"lon": 108.894714,
+"lat": 34.370751
+},
+{
+"osm_id": 255695910,
+"name": "滋兰苑餐厅",
+"key": "amenity",
+"value": "restaurant",
+"lon": 108.894491,
+"lat": 34.370957
+},
+{
+"osm_id": 11166560624,
+"name": "瑞幸咖啡",
+"key": "amenity",
+"value": "cafe",
+"lon": 108.887764,
+"lat": 34.369271
+},
+{
+"osm_id": 11134164705,
+"name": "瑞幸咖啡",
+"key": "amenity",
+"value": "cafe",
+"lon": 108.901325,
+"lat": 34.370459
+},
+{
+"osm_id": 11083682400,
+"name": "瑞幸咖啡",
+"key": "amenity",
+"value": "cafe",
+"lon": 108.903171,
+"lat": 34.375412
+},
+{
+"osm_id": 1017311835,
+"name": "看台\\器材室",
+"key": "leisure",
+"value": "bleachers",
+"lon": 108.892469,
+"lat": 34.368513
+},
+{
+"osm_id": 11083682399,
+"name": "肯德基",
+"key": "amenity",
+"value": "fast_food",
+"lon": 108.903171,
+"lat": 34.375593
+},
+{
+"osm_id": 11402910945,
+"name": "西区京东物流",
+"key": "amenity",
+"value": "post_office",
+"lon": 108.892394,
+"lat": 34.369964
+},
+{
+"osm_id": 831093253,
+"name": "西区小足球场",
+"key": "leisure",
+"value": "pitch",
+"lon": 108.894122,
+"lat": 34.369628
+},
+{
+"osm_id": 11134151643,
+"name": "西区浴室",
+"key": "amenity",
+"value": "public_bath",
+"lon": 108.894191,
+"lat": 34.3714
+},
+{
+"osm_id": 831073209,
+"name": "西区篮球场",
+"key": "leisure",
+"value": "pitch",
+"lon": 108.893862,
+"lat": 34.368786
+},
+{
+"osm_id": 831073207,
+"name": "西区网球场",
+"key": "leisure",
+"value": "pitch",
+"lon": 108.894355,
+"lat": 34.368907
+},
+{
+"osm_id": 11402910944,
+"name": "西区菜鸟驿站",
+"key": "amenity",
+"value": "post_office",
+"lon": 108.892426,
+"lat": 34.369936
+},
+{
+"osm_id": 11402910946,
+"name": "西区顺丰速运",
+"key": "amenity",
+"value": "post_office",
+"lon": 108.892328,
+"lat": 34.369946
+},
+{
+"osm_id": 976316125,
+"name": "西安市经开一中",
+"key": "amenity",
+"value": "school",
+"lon": 108.88686,
+"lat": 34.379563
+},
+{
+"osm_id": 1205663656,
+"name": "西安经开第六小学",
+"key": "amenity",
+"value": "school",
+"lon": 108.909256,
+"lat": 34.375689
+},
+{
+"osm_id": 9722143727,
+"name": "西安经开第六小学",
+"key": "amenity",
+"value": "school",
+"lon": 108.909228,
+"lat": 34.375708
+},
+{
+"osm_id": 1091739070,
+"name": "逸夫图书馆",
+"key": "amenity",
+"value": "library",
+"lon": 108.899683,
+"lat": 34.372648
+},
+{
+"osm_id": 831071198,
+"name": "采芹苑餐厅",
+"key": "amenity",
+"value": "restaurant",
+"lon": 108.890351,
+"lat": 34.370121
+},
+{
+"osm_id": 1205663655,
+"name": "长乐第二小学",
+"key": "amenity",
+"value": "school",
+"lon": 108.909447,
+"lat": 34.374728
+},
+{
+"osm_id": 11173204321,
+"name": "长大一九五一便利店",
+"key": "shop",
+"value": "convenience",
+"lon": 108.887896,
+"lat": 34.369292
+},
+{
+"osm_id": 11144005342,
+"name": "长大一九五一便利店",
+"key": "shop",
+"value": "convenience",
+"lon": 108.892397,
+"lat": 34.370057
+},
+{
+"osm_id": 11166560622,
+"name": "长大一九五一便利店",
+"key": "shop",
+"value": "convenience",
+"lon": 108.893135,
+"lat": 34.37086
+},
+{
+"osm_id": 11144005278,
+"name": "长大一九五一便利店",
+"key": "shop",
+"value": "convenience",
+"lon": 108.904671,
+"lat": 34.374702
+},
+{
+"osm_id": 11144005087,
+"name": "长大一九五一便利店",
+"key": "shop",
+"value": "convenience",
+"lon": 108.906616,
+"lat": 34.374978
+},
+{
+"osm_id": 11402910948,
+"name": "长大驿站",
+"key": "amenity",
+"value": "post_office",
+"lon": 108.891307,
+"lat": 34.372228
+},
+{
+"osm_id": 1204841729,
+"name": "长安大学朱雀幼儿园",
+"key": "amenity",
+"value": "kindergarten",
+"lon": 108.891102,
+"lat": 34.37287
+},
+{
+"osm_id": 271773865,
+"name": "长安大学渭水校区",
+"key": "amenity",
+"value": "university",
+"lon": 108.896942,
+"lat": 34.371361
+},
+{
+"osm_id": 831073206,
+"name": "鸿翔体育场",
+"key": "leisure",
+"value": "pitch",
+"lon": 108.893434,
+"lat": 34.368901
+},
+{
+"osm_id": 1547090977,
+"name": "鸿翔园学生社区",
+"key": "amenity",
+"value": "community_centre",
+"lon": 108.892838,
+"lat": 34.370241
+},
+{
+"osm_id": 1194050477,
+"name": "鸿远乒乓球场",
+"key": "leisure",
+"value": "pitch",
+"lon": 108.894739,
+"lat": 34.370015
+}
+]
+}

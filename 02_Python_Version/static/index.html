@@ -111,6 +111,38 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
                 <span data-icon="expand"></span
                 ><span id="map-expand-text">展开地图</span>
               </button>
+              <button id="map-locate" aria-pressed="false" data-state="off">
+                <span data-icon="locate"></span><span>我的位置</span>
+              </button>
+              <button id="map-route-toggle" aria-pressed="false" aria-controls="route-panel">
+                <span data-icon="route"></span><span>路线</span>
+              </button>
+            </div>
+            <div class="locate-bar">
+              <p id="locate-status" class="locate-status" role="status" hidden></p>
+              <div id="locate-actions" class="locate-actions" hidden>
+                <button id="locate-calibrate" type="button" title="在地图上点出你真实所在的位置，修正定位偏差">校准</button
+                ><button id="locate-uncalibrate" type="button" hidden>清除校准</button>
+              </div>
+            </div>
+            <div id="poi-filters" class="poi-filters" role="group" aria-label="设施图层">
+              <button data-cat="service" aria-pressed="false">办事</button
+              ><button data-cat="dining" aria-pressed="false">餐饮</button
+              ><button data-cat="life" aria-pressed="false">住宿生活</button
+              ><button data-cat="shop" aria-pressed="false">快递商业</button
+              ><button data-cat="study" aria-pressed="false">教学</button
+              ><button data-cat="sports" aria-pressed="false">运动</button
+              ><button data-cat="health" aria-pressed="false">医疗</button
+              ><button data-cat="gate" aria-pressed="false">校门公交</button>
+            </div>
+          </div>
+          <div class="map-hud" aria-hidden="true">
+            <div class="map-compass" title="北">
+              <span id="map-compass-needle" class="map-compass-needle"><b>N</b></span>
+            </div>
+            <div class="map-scale">
+              <span id="map-scale-bar" class="map-scale-bar"></span>
+              <span id="map-scale-text">100 m</span>
             </div>
           </div>
           <div
@@ -179,15 +211,15 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <div class="world-bottom">
             <p id="scene-hint">
               7 处实景 · 点击地标走进校园
-              <span>据 2023 版校图整理 · 非测绘导航</span>
+              <span>OpenStreetMap 路网 · 步行导航仅供参考</span>
             </p>
             <a
               id="map-source"
               class="map-source"
-              href="https://xfjy.chd.edu.cn/info/1024/12168.htm"
+              href="https://www.openstreetmap.org/copyright"
               target="_blank"
               rel="noopener noreferrer"
-              >渭水校区 · 校图来源 ↗</a
+              >地图数据 © OpenStreetMap 贡献者 ↗</a
             >
             <nav id="places" class="place-rail" aria-label="选择校园目的地">
               <button data-place="library">
@@ -257,9 +289,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               </button>
             </div>
             <p id="place-description"></p>
-            <a id="place-agent" class="text-link" href="/static/workbench.html"
-              >带入智能助手 <span data-icon="arrow"></span
-            ></a>
+            <div class="place-actions">
+              <a id="place-agent" class="text-link" href="/static/workbench.html"
+                >带入智能助手 <span data-icon="arrow"></span
+              ></a>
+              <button id="place-route" class="text-link" type="button">
+                到这里去 <span data-icon="route"></span>
+              </button>
+            </div>
             <figure id="place-photo" class="place-photo" hidden>
               <a
                 id="place-photo-open"
@@ -286,6 +323,57 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               工作台查看。本项目非校方官方服务。
             </p>
           </aside>
+          <aside
+            id="route-panel"
+            class="route-panel"
+            hidden
+            aria-labelledby="route-title"
+          >
+            <div class="route-head">
+              <h2 id="route-title" tabindex="-1">步行路线</h2>
+              <button id="route-close" class="panel-close" aria-label="关闭路线规划">
+                <span data-icon="close"></span>
+              </button>
+            </div>
+            <div class="route-fields">
+              <span class="route-dot is-start" aria-hidden="true"></span>
+              <label class="sr-only" for="route-from">起点</label>
+              <select id="route-from"></select>
+              <button
+                id="route-pick"
+                type="button"
+                aria-pressed="false"
+                aria-label="在地图上点选起点"
+                title="在地图上点选起点"
+              >
+                <span data-icon="crosshair"></span>
+              </button>
+              <span class="route-dot is-end" aria-hidden="true"></span>
+              <label class="sr-only" for="route-to">终点</label>
+              <select id="route-to"></select>
+              <button
+                id="route-swap"
+                type="button"
+                aria-label="交换起点和终点"
+                title="交换起点和终点"
+              >
+                <span data-icon="swap"></span>
+              </button>
+            </div>
+            <p id="route-status" class="route-status" role="status"></p>
+            <div id="route-result" hidden>
+              <p id="route-target" class="route-target"></p>
+              <p class="route-summary">
+                <strong id="route-distance"></strong><span id="route-time"></span>
+              </p>
+              <p id="route-note" class="route-note"></p>
+              <ol id="route-steps" class="route-steps" aria-label="分步指引，点击可在地图上定位"></ol>
+            </div>
+            <p class="panel-note">
+              路网来自 OpenStreetMap（© OpenStreetMap 贡献者），步行按 4.5 km/h
+              估算；施工、封闭与开放时间以现场和学校通知为准。位置只发送到本机服务，不会保存。
+            </p>
+          </aside>
         </section>
         <dialog
           id="campus-directory"
@@ -301,8 +389,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <p>七处实景入口，连起课堂、学院与校园生活。从地图走进照片，再把问题带入助手。</p>
           <div id="directory-list" class="directory-list"></div>
           <p class="directory-note">
-            渭水校区相对布局参考学校发布的 2023
-            版校图；模型经过简化，不用于实地导航，不代表接入学校办理服务。
+            渭水校区建筑轮廓与路网来自 OpenStreetMap 公开数据；步行路线仅供参考，不代表接入学校办理服务。
           </p>
         </dialog>
         <section id="guide" class="guide-section" aria-labelledby="guide-title">

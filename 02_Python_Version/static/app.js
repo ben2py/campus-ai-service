@@ -1,5 +1,6 @@
 "use strict";
 import { mountExplorer } from "./explore.js";
+import { targetChips } from "./campus-route.js";
 export function mountWorkbench(root = document) {
   const $ = (id) => root.getElementById(id);
   const themeRoot = root.host || document.documentElement;
@@ -406,7 +407,22 @@ export function mountWorkbench(root = document) {
         ((result.latency_ms || 0) / 1000).toFixed(2) +
         "s";
       actions.append(sources, copy, retry, tag);
-      article.append(heading, answer, actions);
+      article.append(heading, answer);
+      // 回答涉及线下地点时，提供“在地图中查看路线”入口。
+      if (result.map_targets?.length)
+        article.append(
+          targetChips(result.map_targets, (target) => {
+            const request = new CustomEvent("agent-map-route", {
+              detail: target,
+              cancelable: true,
+            });
+            document.dispatchEvent(request);
+            if (!request.defaultPrevented)
+              location.href =
+                "/?route=" + encodeURIComponent(target.type + ":" + target.id);
+          }),
+        );
+      article.append(actions);
     }
     $("messages").append(article);
     return article;

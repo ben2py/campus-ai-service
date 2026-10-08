@@ -27,3 +27,12 @@ python -m src.evaluation.semantic_check
 ```
 
 不要将 `.env`、`data/*.db` 或个人密钥提交到仓库。
+
+## 校园地图、步行路线与定位
+三维校园由 `static/campus-map.json` 渲染。这份文件由 `scripts/build_campus_map.py` 根据 `data/osm/` 中的 OpenStreetMap 离线快照（2026-10-08）生成，包括建筑轮廓、路网、校门和设施点，数据许可为 ODbL，© OpenStreetMap contributors。运行时不访问外网。如需更新快照，替换 `data/osm/` 里的文件后执行：
+```bash
+python scripts/build_campus_map.py
+```
+- 回答涉及线下地点时（如卡务中心、师生服务大厅、校医院、菜鸟驿站），结果里会带上 `map_targets`，回答下方会出现“在地图中查看路线”。地点由应用按问题和回答识别，不由模型生成。API 模式下，模型还可以调用 `locate_campus_place` 工具，说明地点所在片区和最近的校门。
+- `POST /api/map/route` 的参数为 `{"from": {"poi"|"lat","lon"|"x","z"}, "to": {"poi"|"group"|"x","z"}}`。它在路网上用 Dijkstra 算法求最短步行路线，返回折线、距离、步行和骑行时间以及分步指引。路线只能经校门进出围墙；`group` 表示前往最近的一处（如最近的餐厅）。
+- “我的位置”使用浏览器定位（WGS84）。浏览器只在 `127.0.0.1` 或 HTTPS 下允许定位。位置只发送到本机服务计算路线，不写入日志或数据库。离校区较远或无法定位时，路线会从校门出发，也可以在地图上点选起点。连续定位会经过按精度加权的平滑处理。浏览器若返回国测局 GCJ-02 坐标（偏差约 450 米），或 Wi-Fi 定位有固定偏差，可点“校准”，在地图上点出实际位置：系统会自动判断属于哪种情况，并把修正保存在本机浏览器中。

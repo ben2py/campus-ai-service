@@ -334,6 +334,21 @@ window.addEventListener("popstate", () => {
   if (agentRoute()) openAgent(viewFromURL(), false);
   else revealCampus();
 });
+// 工作台回答中的“在地图中查看路线”：回到校园地图并规划路线。
+document.addEventListener("agent-map-route", (e) => {
+  if (!document.body.classList.contains("agent-mode")) return;
+  e.preventDefault();
+  const target = e.detail;
+  document.addEventListener(
+    "campus-mode",
+    (m) => {
+      if (m.detail === "campus")
+        document.dispatchEvent(new CustomEvent("campus-route", { detail: target }));
+    },
+    { once: true },
+  );
+  goCampus();
+});
 document.addEventListener("campus-conversation-updated", async () => {
   needsRefresh = true;
   if (app && !host.hidden && !app.state.busy) {

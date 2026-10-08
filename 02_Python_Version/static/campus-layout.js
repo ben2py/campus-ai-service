@@ -1,66 +1,37 @@
-// Relative positions read from the official Ver.2023 map published 2024-08-28.
-// Coordinates below use an 1888px-wide reference image; they are NOT GPS coordinates.
-export const mapSource = "https://xfjy.chd.edu.cn/info/1024/12168.htm";
-export const locate = (x, y) => [(x - 1000) / 40, 0, (y - 535) / 40];
+// 渭水校区地图数据：由 scripts/build_campus_map.py 从 OpenStreetMap 快照生成（ODbL，© OpenStreetMap contributors）。
+// 坐标为局部平面坐标：1 单位 = meta.unit_m 米，x 向东，z 向南。
+export const mapSource = "https://www.openstreetmap.org/#map=16/34.3716/108.8975";
 export const layout = {
-  library: { position: locate(1160, 545), mapName: "逸夫图书馆" },
-  study: { position: locate(1000, 530), mapName: "修远教学楼" },
-  life: { position: locate(760, 520), mapName: "鸿翔园生活社区" },
-  activities: { position: locate(1570, 550), mapName: "长安文化艺术中心" },
-  highway: { position: locate(393, 625), mapName: "公路学院组团" },
-  materials: { position: locate(270, 725), mapName: "建工·材料组团" },
-  information: { position: locate(985, 415), mapName: "信息·交通组团" },
+  library: { mapName: "逸夫图书馆" },
+  study: { mapName: "修远教学楼" },
+  life: { mapName: "鸿翔园生活社区" },
+  activities: { mapName: "大学生活动中心" },
+  highway: { mapName: "公路学院" },
+  materials: { mapName: "弘毅园实验中心" },
+  information: { mapName: "明德园科研组团" },
 };
-export const communities = [
-  {
-    name: "西区生活社区",
-    x: 760,
-    y: 525,
-    blocks: [
-      [696, 495],
-      [696, 535],
-      [696, 575],
-      [875, 492],
-      [875, 535],
-      [875, 573],
-    ],
-  },
-  {
-    name: "东区生活社区",
-    x: 1460,
-    y: 450,
-    blocks: [
-      [1430, 468],
-      [1430, 513],
-      [1430, 548],
-      [1430, 589],
-      [1535, 398],
-      [1535, 443],
-      [1535, 482],
-      [1660, 520],
-      [1660, 550],
-      [1510, 309],
-      [1510, 338],
-    ],
-  },
-  {
-    name: "西侧生活组团",
-    x: 380,
-    y: 525,
-    blocks: [
-      [297, 500],
-      [289, 540],
-      [394, 503],
-      [445, 503],
-      [390, 544],
-      [447, 546],
-    ],
-  },
-];
-export const mapLabels = [
-  ...Object.entries(layout).map(([key, p]) => ({
-    key,
-    name: p.mapName,
-    position: p.position,
-  })),
-];
+let pending = null;
+export function loadCampusMap() {
+  pending ||= fetch("/static/campus-map.json").then((r) => {
+    if (!r.ok) throw Error("校园地图数据加载失败");
+    return r.json();
+  });
+  pending.catch(() => (pending = null));
+  return pending;
+}
+export function insideCampus(x, z, polygon) {
+  let hit = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [x1, z1] = polygon[i],
+      [x2, z2] = polygon[j];
+    if (z1 > z !== z2 > z && x < ((x2 - x1) * (z - z1)) / (z2 - z1) + x1) hit = !hit;
+  }
+  return hit;
+}
+// 浏览器定位为 WGS84 经纬度，与 OSM 坐标系一致。
+export function toMapXZ(meta, lat, lon) {
+  return {
+    x: ((lon - meta.origin.lon) * meta.m_per_deg.lon) / meta.unit_m,
+    z: (-(lat - meta.origin.lat) * meta.m_per_deg.lat) / meta.unit_m,
+  };
+}

@@ -1570,3 +1570,36 @@ input[role="switch"]:checked:after {
   .pill { min-height: 40px; }
   textarea, label input:not([type=checkbox]), label select { font-size: 16px; }
 }
+
+/* 回答中的地图路线入口（与校园页 .map-target 一致） */
+.map-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.map-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.map-target svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: #e0644f;
+}
+.map-target:hover,
+.map-target:focus-visible {
+  border-color: var(--accent);
+  background: var(--hover);
+}

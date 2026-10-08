@@ -23,6 +23,7 @@ from src.tools.registry import build_default_registry
 from src.workbench.service import Workbench
 from src.workbench.knowledge import SCOPES, validate_scope, conversation_scope
 from src.llm.providers import ModelClient, ProviderError
+from src.navigation import RouteError, campus_map
 
 
 def build_generator() -> GroundedGenerator:
@@ -91,6 +92,8 @@ def create_app(test_config=None) -> Flask:
     def security_headers(response):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
+        # 仅本站页面可请求浏览器定位，用于校园地图“我的位置”。
+        response.headers["Permissions-Policy"] = "geolocation=(self), camera=(), microphone=()"
         response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         if request.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
@@ -159,6 +162,15 @@ def create_app(test_config=None) -> Flask:
             if event["event"] == "error":
                 return jsonify(error=event["message"]), 400
         return jsonify(error="未收到结果。"), 500
+
+    @app.post("/api/map/route")
+    def map_route():
+        # 位置只在本机服务内计算路线，不写入日志或数据库。
+        data = payload()
+        try:
+            return jsonify(campus_map().route(data.get("from"), data.get("to")))
+        except RouteError as error:
+            return jsonify(ok=False, error=str(error)), 422
 
     @app.post("/api/reset")
     def reset():

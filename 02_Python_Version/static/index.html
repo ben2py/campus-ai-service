@@ -122,8 +122,19 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <p id="locate-status" class="locate-status" role="status" hidden></p>
               <div id="locate-actions" class="locate-actions" hidden>
                 <button id="locate-calibrate" type="button" title="在地图上点出你真实所在的位置，修正定位偏差">校准</button
-                ><button id="locate-uncalibrate" type="button" hidden>清除校准</button>
+                ><button id="locate-uncalibrate" type="button" hidden>清除校准</button
+                ><button id="locate-manual" type="button" title="浏览器拿不到位置时，在地图上点出你所在的位置">手动设置位置</button
+                ><button id="locate-help" type="button" aria-expanded="false" aria-controls="locate-help-text" hidden>怎么开启定位</button>
               </div>
+            </div>
+            <div id="locate-help-text" class="locate-help" hidden>
+              <p>Mac 没有 GPS，浏览器要靠 macOS 定位服务（附近 Wi-Fi）来估算位置。拿不到位置时依次检查：</p>
+              <ol>
+                <li>系统设置 → 隐私与安全性 → 定位服务：打开总开关，并在列表中勾选 Google Chrome（或 Microsoft Edge）。修改后需完全退出浏览器（⌘Q）再打开。</li>
+                <li>保持 Wi-Fi 开启（不连接任何网络也可以），系统才能根据附近热点定位。</li>
+                <li>浏览器地址栏左侧的站点设置 → 位置信息 → 允许。</li>
+                <li>仍然失败：换用 Safari 打开本页，或点“手动设置位置”在地图上点出你所在的位置。</li>
+              </ol>
             </div>
             <div id="poi-filters" class="poi-filters" role="group" aria-label="设施图层">
               <button data-cat="service" aria-pressed="false">办事</button

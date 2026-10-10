@@ -91,7 +91,9 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
 
   // ---------- 定位 ----------
   let hideTimer = 0,
-    locator = null;
+    locator = null,
+    locateState = "off",
+    escapeRestore = null;
   function setLocateState(state, text, transient = false) {
     clearTimeout(hideTimer);
     if (transient) hideTimer = setTimeout(() => (locateStatus.hidden = true), 6000);
@@ -99,8 +101,16 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
     $("map-locate").setAttribute("aria-pressed", String(state === "on"));
     locateStatus.textContent = text;
     locateStatus.hidden = !text;
-    $("locate-actions").hidden = state !== "on";
-    $("locate-uncalibrate").hidden = !locator?.calibration;
+    locateState = state;
+    $("locate-actions").hidden = state !== "on" && state !== "error";
+    // 校准只对浏览器定位有意义；手动设置的位置无需校准。
+    $("locate-calibrate").hidden = state !== "on" || !locator?.running || Boolean(fix?.manual);
+    $("locate-uncalibrate").hidden = $("locate-calibrate").hidden || !locator?.calibration;
+    $("locate-help").hidden = state !== "error";
+    if (state !== "error") {
+      $("locate-help-text").hidden = true;
+      $("locate-help").setAttribute("aria-expanded", "false");
+    }
   }
   // 精度分级提示：笔记本没有 GPS，只能靠 Wi-Fi/IP，误差常在几十到数百米。
   function quality(accuracy) {
@@ -148,10 +158,10 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
     if (fix && error.code === 3) return;
     const text =
       error.code === 1
-        ? "未获得定位权限。可在浏览器地址栏允许“位置信息”（macOS 还需在“系统设置 → 隐私与安全性 → 定位服务”中允许浏览器），或在地图上点选起点。"
+        ? "未获得定位权限。可点“怎么开启定位”查看开启步骤，或点“手动设置位置”在地图上点出你所在的位置。"
         : error.code === 3
-          ? "定位超时，请到开阔处重试，或在地图上点选起点。"
-          : "暂时无法获取位置（设备未提供定位信息）。可在地图上点选起点。";
+          ? "定位超时。可点“怎么开启定位”检查设置，或点“手动设置位置”。"
+          : "浏览器拿不到位置：这台电脑没有 GPS，系统定位服务暂时无法根据 Wi-Fi 估算位置。可点“怎么开启定位”按步骤检查，或点“手动设置位置”。";
     stopWatch();
     shareLocation(currentLocation());
     setLocateState("error", text);
@@ -174,7 +184,7 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
       setLocateState("error", "浏览器只允许在 HTTPS 或本机地址下定位，可在地图上点选起点。");
       return Promise.resolve(null);
     }
-    if (fix && locator?.running) {
+    if (fix && (locator?.running || fix.manual)) {
       const world = getWorld();
       if (fix.distance < 3000) world?.focusPoint(fix.x, fix.z, 12);
       return Promise.resolve(fix);
@@ -216,6 +226,34 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
       if (lastPlan?.fromMe) plan({ quiet: true });
     });
   }
+  // 手动设置位置：浏览器无法定位时，在地图上点出自己所在的位置，作为“我的位置”使用。
+  function setManual() {
+    const world = getWorld();
+    if (!ensure() || !world) {
+      setLocateState("error", "三维地图未就绪，无法手动设置位置。");
+      return;
+    }
+    escapeRestore = { state: locateState, text: locateStatus.textContent };
+    setLocateState(locateState === "error" ? "error" : "on", "请在地图上点击你实际所在的位置（Esc 取消）。");
+    world.pick((p) => {
+      escapeRestore = null;
+      stopWatch();
+      const onCampus = insideCampus(p.x, p.z, map.campus),
+        distance = Math.hypot(p.x, p.z) * map.meta.unit_m;
+      fix = { x: p.x, z: p.z, accuracy: 10, onCampus, distance, manual: true };
+      world.setUser({ x: p.x, z: p.z, accuracy: 10 });
+      shareLocation(currentLocation());
+      lastText = "已手动设置你的位置，路线与助手会以此为起点。再次点“我的位置”可取消。";
+      setLocateState("on", lastText);
+      if (!panel.hidden && to.value) plan({ quiet: Boolean(lastPlan) });
+    });
+  }
+  $("locate-manual").onclick = setManual;
+  $("locate-help").onclick = () => {
+    const open = $("locate-help-text").hidden;
+    $("locate-help-text").hidden = !open;
+    $("locate-help").setAttribute("aria-expanded", String(open));
+  };
   $("locate-calibrate").onclick = calibrate;
   $("locate-uncalibrate").onclick = () => {
     locator?.clearCalibration();
@@ -393,7 +431,9 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
     if (e.key === "Escape" && locateStatus.textContent.startsWith("请在地图上点击你实际")) {
       e.stopImmediatePropagation();
       getWorld()?.pick(null);
-      setLocateState("on", lastText);
+      if (escapeRestore) setLocateState(escapeRestore.state, escapeRestore.text);
+      else setLocateState("on", lastText);
+      escapeRestore = null;
       return;
     }
     if (e.key === "Escape" && $("route-pick").getAttribute("aria-pressed") === "true") {
@@ -404,6 +444,7 @@ export function createRoutePlanner({ getWorld, getMap, reveal }) {
   }, true);
   // 供助手读取的当前位置（地图坐标）：优先使用浏览器定位，其次是地图点选的起点。
   function currentLocation() {
+    if (fix?.manual) return { x: +fix.x.toFixed(3), z: +fix.z.toFixed(3), accuracy: 10, source: "manual" };
     if (fix && locator?.running)
       return { x: +fix.x.toFixed(3), z: +fix.z.toFixed(3), accuracy: Math.round(fix.accuracy), source: "gps" };
     if (picked) return { x: +picked.x.toFixed(3), z: +picked.z.toFixed(3), source: "pick" };

@@ -1470,3 +1470,28 @@ body.is-exploring .site-header {
     right: 6%;
   }
 }
+
+.locate-help {
+  flex-basis: 100%;
+  order: 3;
+  max-width: 720px;
+  padding: 10px 14px;
+  background: var(--paper);
+  color: var(--ink);
+  border-left: 2px solid #e0846f;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.locate-help[hidden] {
+  display: none;
+}
+.locate-help p,
+.locate-help ol {
+  margin: 0;
+}
+.locate-help ol {
+  padding-left: 18px;
+}
+.campus-world:has(#locate-help-text:not([hidden])) .hero-copy {
+  visibility: hidden;
+}

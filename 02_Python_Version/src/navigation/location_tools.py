@@ -10,7 +10,7 @@ import math
 from .campus_map import CampusMap, RouteError
 
 MAX_ACCURACY_M = 5000.0
-SOURCES = {"gps": "浏览器定位", "pick": "地图点选"}
+SOURCES = {"gps": "浏览器定位", "pick": "地图点选", "manual": "手动设置的位置"}
 CATEGORY_LABEL = {
     "building": "楼宇", "study": "学习", "life": "生活服务", "service": "办事服务", "dining": "餐饮",
     "sports": "运动", "gate": "校门", "activity": "活动场所", "shop": "商店", "health": "医疗", "transit": "交通",

@@ -7,7 +7,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from .handoff import HANDOFF_SCHEMA, handoff_to_human, initialize_handoff_database
+from .handoff import (
+    HANDOFF_SCHEMA, QUERY_HANDOFF_SCHEMA, LOCAL_DEMO_OWNER,
+    handoff_to_human, initialize_handoff_database, query_handoff_ticket,
+)
 from .status import STATUS_SCHEMA, initialize_status_database, query_application_status
 
 
@@ -54,9 +57,17 @@ class ToolRegistry:
         return result
 
 
-def build_default_registry(database_path: Path) -> ToolRegistry:
+def build_default_registry(database_path: Path, *, owner: str = LOCAL_DEMO_OWNER) -> ToolRegistry:
+    """启动时初始化数据，然后绑定工具；请求期间使用 bind_default_registry。"""
     initialize_status_database(database_path)
     initialize_handoff_database(database_path)
+    return bind_default_registry(database_path, owner=owner)
+
+
+def bind_default_registry(database_path: Path, *, owner: str = LOCAL_DEMO_OWNER) -> ToolRegistry:
+    """归属由宿主绑定，不在 Tool Schema 中暴露给模型或用户。"""
+    if not isinstance(owner, str) or not owner.strip():
+        raise ValueError("工单工作空间归属不能为空。")
     registry = ToolRegistry()
     registry.register(
         STATUS_SCHEMA,
@@ -64,5 +75,6 @@ def build_default_registry(database_path: Path) -> ToolRegistry:
             database_path, student_id, application_id
         ),
     )
-    registry.register(HANDOFF_SCHEMA, lambda reason: handoff_to_human(database_path, reason))
+    registry.register(HANDOFF_SCHEMA, lambda reason: handoff_to_human(database_path, reason, owner=owner))
+    registry.register(QUERY_HANDOFF_SCHEMA, lambda ticket_id: query_handoff_ticket(database_path, ticket_id, owner=owner))
     return registry

@@ -3,11 +3,12 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from src.agent.agent import CampusServiceAgent
 from src.ingestion.chunker import chunk_documents
 from src.ingestion.loader import load_documents
-from src.llm.client import DeterministicGroundedClient
+from src.llm.client import DeterministicGroundedClient, LLMError, LLMResponse
 from src.memory.conversation import ConversationMemory
 from src.rag.pipeline import RAGPipeline
 from src.retrieval.embedder import HashingEmbedder
@@ -38,6 +39,29 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(result.route, "knowledge")
         self.assertIn("08:30", result.answer)
         self.assertIn("D08", [citation["source_id"] for citation in result.citations])
+
+    def test_knowledge_trace_keeps_generation_after_context(self):
+        result = self.agent.respond("图书馆周末几点开馆？", "rag-trace")
+        generation = [item for item in result.trace if item["step"] == "generation"]
+        self.assertTrue(generation, "Agent 不应按工具步数截断 RAG 阶段日志")
+        self.assertEqual(generation[0]["model"], "deterministic-grounded-v1")
+        self.assertEqual(generation[0]["citation_count"], 1)
+
+    def test_generator_failure_trace_keeps_unknown_reason(self):
+        with patch.object(self.agent.rag.generator, "answer", side_effect=LLMError("unavailable")):
+            with self.assertLogs("campus_agent.rag", level="WARNING"):
+                result = self.agent.respond("图书馆周末几点开馆？", "rag-error-trace")
+        self.assertTrue(result.unknown)
+        self.assertEqual(result.trace[-1].get("reason"), "generator_error")
+        self.assertEqual(result.trace[-2]["status"], "error")
+
+    def test_generator_refusal_trace_keeps_unknown_reason(self):
+        refusal = LLMResponse("证据不足，请核实。", "test-model", "api", unknown=True)
+        with patch.object(self.agent.rag.generator, "answer", return_value=refusal):
+            result = self.agent.respond("图书馆周末几点开馆？", "rag-unknown-trace")
+        self.assertTrue(result.unknown)
+        self.assertEqual(result.citations, [])
+        self.assertEqual(result.trace[-1].get("reason"), "generator_unknown")
 
     def test_status_query_calls_correct_tool(self):
         result = self.agent.respond("查询 S1001 的 AP2026001 申请进度", "status")

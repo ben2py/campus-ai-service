@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from src.memory.conversation import ConversationMemory, Message
 from src.rag.pipeline import RAGPipeline
 from src.tools.registry import ToolRegistry
+from src.tools.handoff import TICKET_ID_PATTERN, extract_ticket_id, ticket_query_requested
 
 
 @dataclass(frozen=True)
@@ -140,6 +141,30 @@ class CampusServiceAgent:
                 "refuse",
                 trace,
             )
+        if ticket_query_requested(question):
+            ticket_id = extract_ticket_id(question)
+            if not ticket_id:
+                for message in reversed(self.memory.recent(session_id)):
+                    if message.role == "assistant":
+                        previous_id = extract_ticket_id(message.content)
+                        if previous_id and TICKET_ID_PATTERN.fullmatch(previous_id):
+                            ticket_id = previous_id
+                            break
+            if not ticket_id:
+                trace.append({"step": 2, "action": "request_arguments", "tool": "query_handoff_ticket"})
+                return self._finish(
+                    started, session_id, question,
+                    "请提供需要查询的工单编号（HF- 开头，后接 8 位字符）；我只能查询当前工作空间的本地模拟工单。",
+                    "request_clarification", trace,
+                )
+            arguments = {"ticket_id": ticket_id}
+            result = self._execute_tool_loop("query_handoff_ticket", arguments, trace)
+            return self._finish(
+                started, session_id, question, str(result.get("message")),
+                "tool", trace, tool_name="query_handoff_ticket",
+                tool_arguments=arguments, tool_result=result,
+                unknown=not bool(result.get("ok")),
+            )
         if any(term in question for term in ("人工客服", "转人工", "找人工", "人工处理")):
             arguments = {"reason": question}
             result = self._execute_tool_loop("handoff_to_human", arguments, trace)
@@ -204,7 +229,8 @@ class CampusServiceAgent:
             question,
             rag_result.answer,
             "unknown" if rag_result.unknown else "knowledge",
-            trace[: self.max_steps + 2],
+            # max_steps 限制工具执行循环，不限制 RAG 的诊断阶段数量。
+            trace,
             citations=rag_result.citations,
             retrieval=rag_result.retrieval,
             unknown=rag_result.unknown,

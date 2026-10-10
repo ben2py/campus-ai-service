@@ -246,6 +246,114 @@ class HandoffTicketChatTests(unittest.TestCase):
         self.assertEqual(result.get("tool_name"), "query_handoff_ticket")
         self.assertTrue(result["tool_result"]["ok"])
 
+    def test_api_text_only_creation_must_write_a_real_ticket(self):
+        self.client.post("/api/settings", json=config())
+        fabricated = {"choices": [{"message": {"role": "assistant", "content": "已创建工单 HF-1A8F2E4B。"}}]}
+        with patch("src.llm.providers.post_json", return_value=fabricated):
+            response = self.chat("请转人工客服，我需要复核奖学金材料").json
+        self.assertEqual(response.get("tool_name"), "handoff_to_human")
+        self.assertTrue(response["tool_result"]["ok"])
+        ticket = response["tool_result"]["ticket_id"]
+        self.assertIn(ticket, response["answer"])
+        self.assertNotIn("HF-1A8F2E4B", response["answer"])
+        with closing(sqlite3.connect(self.settings["TOOLS_DB"])) as db:
+            row = db.execute("SELECT ticket_id FROM handoff_tickets").fetchall()
+        self.assertEqual(row, [(ticket,)])
+
+    def test_api_text_only_followup_queries_persisted_ticket(self):
+        ticket = self.create_ticket()
+        self.client.post("/api/settings", json=config())
+        fabricated = {"choices": [{"message": {"role": "assistant", "content": "工单已过期，刷新页面就会丢失。"}}]}
+        with patch("src.llm.providers.post_json", return_value=fabricated):
+            response = self.chat("查询刚才那个工单的进度").json
+        self.assertEqual(response.get("tool_name"), "query_handoff_ticket")
+        self.assertEqual(response["tool_result"]["ticket_id"], ticket)
+        self.assertFalse(response["unknown"])
+        self.assertIn("queued", response["answer"])
+        self.assertNotIn("过期", response["answer"])
+        self.assertNotIn("丢失", response["answer"])
+
+    def test_api_query_answer_cannot_contradict_successful_observation(self):
+        ticket = self.create_ticket()
+        self.client.post("/api/settings", json=config())
+        call = {"choices": [{"message": {"role": "assistant", "content": None, "tool_calls": [{"id": "query", "type": "function", "function": {"name": "query_handoff_ticket", "arguments": json.dumps({"ticket_id": ticket})}}]}}]}
+        fabricated = {"choices": [{"message": {"role": "assistant", "content": "未找到工单，工单不会跨会话保留。"}}]}
+        with patch("src.llm.providers.post_json", side_effect=[call, fabricated]):
+            response = self.chat(f"查询工单 {ticket}").json
+        self.assertTrue(response.get("tool_result", {}).get("ok"))
+        self.assertIn("排队中", response["answer"])
+        self.assertNotIn("未找到", response["answer"])
+
+    def test_api_followup_does_not_trust_unexecuted_ticket_in_history(self):
+        bench = self.app.extensions["workbench"]
+        with self.client.session_transaction() as session:
+            owner = session["owner"]
+        bench.store.save_turn(owner, self.identity, "请转人工客服", {"answer": "已创建 HF-1A8F2E4B", "trace": []})
+        self.client.post("/api/settings", json=config())
+        fabricated = {"choices": [{"message": {"role": "assistant", "content": "查询工单 HF-1A8F2E4B"}}]}
+        with patch("src.llm.providers.post_json", return_value=fabricated):
+            response = self.chat("查询刚才那个工单的进度").json
+        self.assertEqual(response["route"], "request_clarification")
+        self.assertNotIn("HF-1A8F2E4B", response["answer"])
+
+    def test_api_repeated_creation_calls_do_not_duplicate_ticket(self):
+        self.client.post("/api/settings", json=config())
+        calls = [{"id": str(i), "type": "function", "function": {
+            "name": "handoff_to_human", "arguments": json.dumps({"reason": reason})}}
+            for i, reason in enumerate(("奖学金材料复核", "需要人工复核奖学金"))]
+        turn = {"choices": [{"message": {"role": "assistant", "content": None, "tool_calls": calls}}]}
+        answer = {"choices": [{"message": {"role": "assistant", "content": "已创建 HF-1A8F2E4B"}}]}
+        with patch("src.llm.providers.post_json", side_effect=[turn, answer]):
+            response = self.chat("请转人工客服，我需要复核奖学金材料").json
+        with closing(sqlite3.connect(self.settings["TOOLS_DB"])) as db:
+            tickets = db.execute("SELECT ticket_id FROM handoff_tickets").fetchall()
+        self.assertEqual(len(tickets), 1)
+        self.assertIn(tickets[0][0], response["answer"])
+        self.assertNotIn("HF-1A8F2E4B", response["answer"])
+
+    def test_api_wrong_model_query_id_cannot_replace_explicit_user_id(self):
+        ticket = self.create_ticket()
+        self.client.post("/api/settings", json=config())
+        call = {"choices": [{"message": {"role": "assistant", "content": None, "tool_calls": [{"id": "wrong-id", "type": "function", "function": {"name": "query_handoff_ticket", "arguments": '{"ticket_id":"HF-00000000"}'}}]}}]}
+        answer = {"choices": [{"message": {"role": "assistant", "content": "未找到该工单，刷新页面就丢失了。"}}]}
+        with patch("src.llm.providers.post_json", side_effect=[call, answer]):
+            response = self.chat(f"查询工单 {ticket}").json
+        self.assertEqual(response["tool_result"]["ticket_id"], ticket)
+        self.assertIn("排队中", response["answer"])
+        self.assertNotIn("丢失", response["answer"])
+
+    def test_api_customer_service_information_does_not_create_ticket(self):
+        self.client.post("/api/settings", json=config())
+        answer = {"choices": [{"message": {"role": "assistant", "content": "请核对服务中心官方工作时间。"}}]}
+        with patch("src.llm.providers.post_json", return_value=answer):
+            result = self.chat("人工客服工作时间是什么").json
+        self.assertEqual(result["answer"], answer["choices"][0]["message"]["content"])
+        with closing(sqlite3.connect(self.settings["TOOLS_DB"])) as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM handoff_tickets").fetchone()[0], 0)
+
+    def test_api_cancelled_creation_does_not_write_ticket(self):
+        self.client.post("/api/settings", json=config())
+        bench = self.app.extensions["workbench"]
+        with self.client.session_transaction() as session:
+            owner = session["owner"]
+        def cancelled_answer(*args):
+            bench.cancel(owner, self.identity)
+            return {"choices": [{"message": {"role": "assistant", "content": "已创建工单 HF-1A8F2E4B"}}]}
+        with patch("src.llm.providers.post_json", side_effect=cancelled_answer):
+            response = self.chat("请转人工客服")
+        self.assertEqual(response.status_code, 400)
+        with closing(sqlite3.connect(self.settings["TOOLS_DB"])) as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM handoff_tickets").fetchone()[0], 0)
+
+    def test_api_failed_creation_does_not_claim_persistence(self):
+        self.client.post("/api/settings", json=config())
+        call = {"choices": [{"message": {"role": "assistant", "content": None, "tool_calls": [{"id": "invalid", "type": "function", "function": {"name": "handoff_to_human", "arguments": '{"reason":"x"}'}}]}}]}
+        answer = {"choices": [{"message": {"role": "assistant", "content": "已创建工单"}}]}
+        with patch("src.llm.providers.post_json", side_effect=[call, answer]):
+            result = self.chat("请转人工客服").json
+        self.assertTrue(result["unknown"])
+        self.assertNotIn("记录保存在", result["answer"])
+        self.assertNotIn("已创建", result["answer"])
 
 
 if __name__ == "__main__":

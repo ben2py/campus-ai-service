@@ -63,8 +63,7 @@ function loadCalibration() {
 export function locateOnce(meta, { timeout = 15000 } = {}) {
   if (!("geolocation" in navigator) || !window.isSecureContext) return Promise.resolve({ error: "unsupported" });
   return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
+    const convert = ({ coords }) => {
         const cal = loadCalibration();
         const [lat, lon] = cal?.mode === "gcj02" ? gcjToWgs(coords.latitude, coords.longitude) : [coords.latitude, coords.longitude];
         const p = toMapXZ(meta, lat, lon);
@@ -73,10 +72,20 @@ export function locateOnce(meta, { timeout = 15000 } = {}) {
           p.z += cal.dz;
         }
         // 距校区约 25 km 以外：超出地图坐标范围，按“不在校区附近”处理。
-        if (!(Math.abs(p.x) < 500 && Math.abs(p.z) < 500)) return resolve({ error: "unavailable" });
-        resolve({ x: +p.x.toFixed(3), z: +p.z.toFixed(3), accuracy: Math.round(Math.min(coords.accuracy, 5000)), source: "gps" });
+        if (!(Math.abs(p.x) < 500 && Math.abs(p.z) < 500)) return { error: "unavailable" };
+        return { x: +p.x.toFixed(3), z: +p.z.toFixed(3), accuracy: Math.round(Math.min(coords.accuracy, 5000)), source: "gps" };
+      };
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve(convert(pos)),
+      (e) => {
+        if (e.code === 1) return resolve({ error: "denied" });
+        // 高精度定位失败（常见于 Mac：没有 GPS，系统定位服务暂时给不出结果）时，改用低精度/缓存位置再试一次。
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve(convert(pos)),
+          (e2) => resolve({ error: e2.code === 1 ? "denied" : e2.code === 3 ? "timeout" : "unavailable" }),
+          { enableHighAccuracy: false, timeout, maximumAge: 600000 },
+        );
       },
-      (e) => resolve({ error: e.code === 1 ? "denied" : e.code === 3 ? "timeout" : "unavailable" }),
       { enableHighAccuracy: true, timeout, maximumAge: 120000 },
     );
   });
@@ -130,11 +139,23 @@ export function createLocator(meta, { onFix, onError }) {
   return {
     start() {
       this.stop();
-      watch = navigator.geolocation.watchPosition(handle, onError, {
-        enableHighAccuracy: true,
-        timeout: 20000,
-        maximumAge: 0,
-      });
+      const run = (high) =>
+        navigator.geolocation.watchPosition(
+          handle,
+          (e) => {
+            // 高精度模式拿不到位置（POSITION_UNAVAILABLE/超时）且尚无结果时，降级为低精度并允许使用 10 分钟内的缓存位置。
+            if (high && e.code !== 1 && !raw) {
+              navigator.geolocation.clearWatch(watch);
+              watch = run(false);
+              return;
+            }
+            onError(e);
+          },
+          high
+            ? { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            : { enableHighAccuracy: false, timeout: 20000, maximumAge: 600000 },
+        );
+      watch = run(true);
     },
     stop() {
       if (watch !== null) navigator.geolocation.clearWatch(watch);

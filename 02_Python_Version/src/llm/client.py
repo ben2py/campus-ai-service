@@ -23,6 +23,8 @@ class LLMResponse:
     text: str
     model: str
     mode: str
+    # 显式传递证据不足，避免 Pipeline 靠答案关键词猜测是否拒答。
+    unknown: bool = False
 
 
 class GroundedGenerator(Protocol):
@@ -74,6 +76,7 @@ class OpenAICompatibleClient:
                 "当前知识库没有可靠依据，建议转人工服务中心确认。",
                 self.model,
                 "api",
+                unknown=True,
             )
         evidence = "\n\n".join(
             f"[{item['source_id']} {item['section']}]\n{item['text']}" for item in contexts
@@ -106,7 +109,7 @@ class DeterministicGroundedClient:
 
     def answer(self, question: str, contexts: list[dict[str, str]]) -> LLMResponse:
         if not contexts:
-            return LLMResponse("当前知识库没有可靠依据，建议转人工服务中心确认。", self.model, "offline")
+            return LLMResponse("当前知识库没有可靠依据，建议转人工服务中心确认。", self.model, "offline", unknown=True)
         query_terms = self._terms(question)
         candidates: list[tuple[float, str, dict[str, str]]] = []
         for context in contexts:
@@ -128,7 +131,7 @@ class DeterministicGroundedClient:
             if len(selected) == 2:
                 break
         if not selected:
-            return LLMResponse("当前知识库没有可靠依据，建议转人工服务中心确认。", self.model, "offline")
+            return LLMResponse("当前知识库没有可靠依据，建议转人工服务中心确认。", self.model, "offline", unknown=True)
         body = "".join(sentence for sentence, _ in selected)
         citations = []
         for _, context in selected:
